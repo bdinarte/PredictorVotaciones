@@ -13,6 +13,7 @@ Módulo que puede entrenar distintos modelos de clasificación de votantes y gen
 3. Instalar la versión adecuada de Tensorflow, `cpu` o `gpu` mediante alguno de los siguientes comandos según corresponda:
 
     > pip install --upgrade tensorflow
+
     > pip install --upgrade tensorflow-gpu
 
 
