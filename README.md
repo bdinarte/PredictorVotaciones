@@ -1,4 +1,4 @@
-# Predictor de votaciones CR
+﻿# Predictor de votaciones CR
 
 Módulo que puede entrenar distintos modelos de clasificación de votantes y genera una serie de archivos de salida analizando el rendimiento de cada modelo.
 
@@ -6,7 +6,7 @@ Módulo que puede entrenar distintos modelos de clasificación de votantes y gen
 
 ### Requisitos previos
 
-**Nota**: Se debe contar específicamente con la versión `3.5.0` de Python.
+**Nota**: Si se trabaja con Windows 7 o posterior, se debe contar con la versión `3.5.x` o `3.6.x` de Python de 64-bit.
 
 1. Abrir la consola de comandos con permisos de administrador.
 
