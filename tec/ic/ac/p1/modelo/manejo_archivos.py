@@ -51,9 +51,9 @@ def guardar_como_csv(df, nombre_archivo):
     try:
         df.to_csv(nombre_archivo)
 
-    except Exception:
+    except Exception as e:
         print("Error al guardar el archivo: " + nombre_archivo)
-        print("Puede que este siendo utilizado por otro proceso")
+        print(e)
 
 
 # -----------------------------------------------------------------------------
