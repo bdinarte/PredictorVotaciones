@@ -5,34 +5,49 @@ Módulo con las funciones necesarias para realizar cross-validation
 """
 
 import math
-import numpy as np
 from random import shuffle
+from itertools import chain
 
 # -----------------------------------------------------------------------------
 
 
-def k_fold_cross_validation(datos, porcentaje_pruebas=20, k_segmentos=4):
+def k_fold_cross_validation(datos, clasificador,
+                            porcentaje_pruebas=20, k_segmentos=4):
 
     """
-    1. Dividide los datos en un conjunto de pruebas y otro de entrenamiento
+    1. Se dividen los datos en un conjunto de pruebas y otro de entrenamiento
     2. El conjunto de entrenamiento lo dividide en `k_segmentos`
-    3. Continuará
+    3. Repetir k veces:
+        A. Obtener el k segmento para pruebas y el resto para entrenamiento
+        B. Entrenar el clasificador
+        C. Ejecutar el clasificador para obtener el error
+    4. El error se convierte en el promedio de los errores obtenidos
     :param datos: Lista
+    :param clasificador: TODO: Por definir
     :param porcentaje_pruebas: Porcentaje de los `datos` para pruebas
     :param k_segmentos: Cantidad de segmentos
-    :return:
+    :return: El promedio de error obtenidos de los clasificadores
     """
 
+    # Se aparta un conjunto
     shuffle(datos)
+    datos_divididos = dividir_datos(datos, porcentaje_pruebas)
+    datos_pruebas = datos_divididos[0]
+    datos_entrenamiento = datos_divididos[1]
 
-    datos_pruebas, datos_entrenamiento = \
-        dividir_datos(datos, porcentaje_pruebas)
-
+    errores = list()
     segmentos = obtener_segmentos(datos_entrenamiento, k_segmentos)
 
-    # TODO: Aquí comenzar la evaluación de los modelos
+    for k in range(k_segmentos):
+        conjuntos = agrupar_segmentos(k, segmentos)
+        conjunto_pruebas = conjuntos[0]
+        conjunto_entrenamiento = conjuntos[1]
+        # TODO: Se entrena el clasificador
+        # clasificador = entrenar(clasificador, conjunto_entrenamiento)
+        # TODO: Se ejecuta el clasificador
+        # errores.append(clasificar(clasificador, conjunto_pruebas))
 
-    return None
+    return sum(errores)
 
 # -----------------------------------------------------------------------------
 
@@ -82,13 +97,12 @@ def obtener_segmentos(datos, k_segmentos):
     >>> datos_entrenamiento = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
     >>> obtener_segmentos(datos_entrenamiento, k_segmentos=4)
     [['A', 'B'], ['C', 'D'], ['E', 'F'], ['G', 'H', 'I']]
-
     """
 
     cant_datos = len(datos)
 
     # Tamaño de cada uno de los segmentos 
-    t_segmento = round(cant_datos/k_segmentos)
+    t_segmento = round(cant_datos / k_segmentos)
 
     # Se necesita en caso de que la cantidada de datos no sea
     # múltiplo de `k_segmentos`
@@ -105,5 +119,46 @@ def obtener_segmentos(datos, k_segmentos):
         segmentos.append(datos[indice_actual:cant_datos])
 
     return segmentos
+
+# -----------------------------------------------------------------------------
+
+
+def agrupar_segmentos(indice_pruebas, segmentos):
+
+    """
+    Agrupa los segmentos de entrenamiento en un solo conjunto apartando
+    del segmento destinado a pruebas
+    :param indice_pruebas: Lugar del segmento de pruebas dentro del
+    conjunto de segmentos
+    :param segmentos: Lista de listas
+    :return: (conjunto_prueba, conjunto_entrenamiento)
+
+    Ejemplos:
+
+    >>> segmentos = [['A', 'B'], ['C', 'D'], ['E', 'F']]
+    >>> agrupar_segmentos(0, segmentos)
+    (['A', 'B'], ['C', 'D', 'E', 'F'])
+
+    >>> segmentos = [['A', 'B'], ['C', 'D'], ['E', 'F']]
+    >>> agrupar_segmentos(1, segmentos)
+    (['C', 'D'], ['A', 'B', 'E', 'F'])
+
+    >>> segmentos = [['A', 'B'], ['C', 'D'], ['E', 'F']]
+    >>> agrupar_segmentos(2, segmentos)
+    (['E', 'F'], ['A', 'B', 'C', 'D'])
+    """
+
+    cant_segmentos = len(segmentos)
+    conjunto_pruebas = segmentos[indice_pruebas]
+
+    # Se ignora `segmento_prueba`
+    inicio = segmentos[0:indice_pruebas]
+    final = segmentos[indice_pruebas + 1: cant_segmentos]
+
+    # `chain.from_iterable` fue la función más rápida para
+    # aplanar la lista. Fuente: https://goo.gl/28KsUx
+    conjunto_entrenamiento = list(chain.from_iterable(inicio + final))
+
+    return conjunto_pruebas, conjunto_entrenamiento
 
 # -----------------------------------------------------------------------------
