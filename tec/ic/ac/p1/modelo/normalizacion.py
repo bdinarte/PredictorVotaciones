@@ -2,31 +2,41 @@
 import pandas as pd
 
 
-def normalize(data, attribute_to_norm, scale_function):
+def normalize(data, attribute_to_norm, scale_function='fs'):
+    """
+    feature scaling(default), 'ss' standard dev, 'os' overmax scaling
+    :param data: dataframe
+    :param attribute_to_norm: lista de columnas a normalizar
+    :param scale_function: default = feature_scaling, 'ss' standard scaling,
+    'os' overmax scaling
+    :return: dataframe normalizado
+    """
 
-    f = feature_scaling
+    f = __feature_scaling
     if scale_function == 'ss':
-        f = standard_scaling
+        f = __standard_scaling
     if scale_function == 'os':
-        f = overmax_scaling
+        f = __overmax_scaling
 
     for col in attribute_to_norm:
         data[col] = f(data[col])
 
+    return data
 
-def feature_scaling(df):
+
+def __feature_scaling(df):
 
     # x_normalized = (x - xmin) / (xmax - xmin)
-    return (df - df.min()) / (df.max - df.min)
+    return (df - df.min()) / (df.max() - df.min())
 
 
-def standard_scaling(df):
+def __standard_scaling(df):
 
     # x_normalized = (x - xmean) / xstddev
-    return (df - df.mean()) / df.std
+    return (df - df.mean()) / df.std()
 
 
-def overmax_scaling(df):
+def __overmax_scaling(df):
 
     # x_normalized = x / xmax
-    return df - df.max()
+    return df / df.max()
