@@ -63,14 +63,9 @@ def obtener_dataframe(ruta_csv):
     """
     Lee un dataframe desde un csv.
     :param ruta_csv: nombre completo del archivo csv
-    :param encabezado: Boolean que dice si dejar o no el encabezado leído
-    :return: Dataframe donde la columna 0 son los nombres de los cantones, la
-    columna corresponde a la provincia de ese canton.
+    :return: Dataframe
     """
 
-    dataframe = leer_csv(ruta_csv)
-
-    # Se coloca cual columna se utiliza para busquedas
-    return dataframe.set_index(dataframe.columns[0])
+    return leer_csv(ruta_csv)
 
 # -----------------------------------------------------------------------------
