@@ -75,9 +75,9 @@ def ordenar(datos, columna):
     :return: Los mismos datos de entrada pero ordenados
 
     Ejemplo:
-    >>> datos = np.array([[  1,  10,   3],
-    ...                   [ 34,  56,  43],
-    ...                   [123,   9, 120]])
+    >>> datos = np.array([[  1, 10,   3],
+    ...                   [ 34, 56,  43],
+    ...                   [123,  9, 120]])
     >>> ordenar(datos, columna=1)
     array([[123,   9, 120],
            [  1,  10,   3],
@@ -108,6 +108,32 @@ def distancia(vector_x, vector_y):
     # Sumatoria de las diferencias al cuadrado, es lo mismo que:
     # math.sqrt(np.sum(np.square(vector_x - vector_y)))
     return np.linalg.norm(vector_x - vector_y)
+
+# -----------------------------------------------------------------------------
+
+
+def seleccionar_atributo(datos):
+    """
+    Selecciona el atributo que se usará para dividir el
+    árbol a partir de los datos presentes en un nodo.
+    Se usa como criterio la columna que tiene mayor varianza.
+
+    :param datos: 2D np.array
+    Para este caso los datos son los que tiene un nodo en específico
+    :return: índice de la columna con mayor varianza en los `datos`
+
+    Ejemplos:
+    >>> datos = np.array([[1,  5, 8],
+    ...                   [3, 10, 7],
+    ...                   [5, 15, 6],
+    ...                   [7, 20, 5]])
+    >>> seleccionar_atributo(datos)
+    1
+    """
+
+    varianzas = np.var(datos, axis=0)
+    return np.argmax(varianzas)
+
 
 # -----------------------------------------------------------------------------
 
