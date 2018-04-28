@@ -56,7 +56,7 @@ def kdtree(datos):
     """
 
     # Para que todos los atributos tengan la misma escala
-    datos = normalizar(datos)
+    # datos = normalizar(datos)
 
     tamanho_datos = len(datos)
     cant_atributos = len(datos[0])
@@ -90,8 +90,13 @@ def kdtree_aux(datos, atributos_no_usados):
         DATOS_DERECHA: datos donde el atributo es > al del vector medio
     """
 
+    tamanho_datos = len(datos)
+
+    if tamanho_datos == 1:
+        return datos
+
     # Si no cumple entonces retorna None de manera implícita
-    if len(datos) > 1:
+    if tamanho_datos > 1:
 
         # Se copia para no alterar el del padre
         atributos_no_usados = np.copy(atributos_no_usados)
