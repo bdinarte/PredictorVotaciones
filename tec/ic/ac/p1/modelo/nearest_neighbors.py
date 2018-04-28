@@ -23,6 +23,9 @@ NOTAS:
 import numpy as np
 from pprint import pprint
 
+# TODO: Editar para que funcione fuera del IDE
+from p1.util.timeit import timeit
+
 # -----------------------------------------------------------------------------
 
 # Se ha elegido un diccionario para crear el kd-Tree.
@@ -40,7 +43,7 @@ DATOS_DERECHA = "E. NODO_DERECHO"
 # -----------------------------------------------------------------------------
 
 
-def kdtree(datos):
+def kdtree(datos, max_profundidad=2):
 
     """
     Crea el kd-Tree como un diccionario anidado.
@@ -52,8 +55,12 @@ def kdtree(datos):
 
     :param datos: Lista de listas o np.array donde todos los elementos
     son númericos.
+    :param max_profundidad: Representa la cantidad de niveles máx del árbol
     :return: kdtree_aux(datos, atributos_no_usados)
     """
+
+    if max_profundidad is 0:
+        return None
 
     # Para que todos los atributos tengan la misma escala
     # datos = normalizar(datos)
@@ -66,12 +73,12 @@ def kdtree(datos):
 
     # Si no cumple retorna None implícitamente
     if tamanho_datos > 1:
-        return kdtree_aux(datos, atributos_no_usados)
+        return kdtree_aux(datos, atributos_no_usados, max_profundidad)
 
 # -----------------------------------------------------------------------------
 
 
-def kdtree_aux(datos, atributos_no_usados):
+def kdtree_aux(datos, atributos_no_usados, max_profundidad):
 
     """
     Función de apoyo para kdtree(datos). Esto para que dicha funcíón no
@@ -81,6 +88,7 @@ def kdtree_aux(datos, atributos_no_usados):
     :param atributos_no_usados: np.array con elementos booleanos.
     Un True representa que el atributo en esa misma posición en los datos
     no ha sido utilizado para dividir un nodo.
+    :param max_profundidad: Representa la cantidad de niveles máx del árbol
 
     :return: Diccionario con la siguiente información:
         ATRIBUTO: índice de la columna utilizada para dividir
@@ -92,7 +100,7 @@ def kdtree_aux(datos, atributos_no_usados):
 
     tamanho_datos = len(datos)
 
-    if tamanho_datos == 1:
+    if tamanho_datos == 1 or max_profundidad <= 1:
         return datos
 
     # Si no cumple entonces retorna None de manera implícita
@@ -117,8 +125,12 @@ def kdtree_aux(datos, atributos_no_usados):
         derecha = nodo[DATOS_DERECHA]
 
         # Se aplica recursivamente en los hijos
-        nodo[DATOS_IZQUIERDA] = kdtree_aux(izquierda, atributos_no_usados)
-        nodo[DATOS_DERECHA] = kdtree_aux(derecha, atributos_no_usados)
+
+        nodo[DATOS_IZQUIERDA] = \
+            kdtree_aux(izquierda, atributos_no_usados, max_profundidad - 1)
+
+        nodo[DATOS_DERECHA] = \
+            kdtree_aux(derecha, atributos_no_usados, max_profundidad - 1)
 
         return nodo
 
@@ -331,6 +343,7 @@ def cercano(datos, vector_x):
 # -----------------------------------------------------------------------------
 
 
+@timeit
 def ejemplo_kdtree():
 
     """
@@ -354,8 +367,10 @@ def ejemplo_kdtree():
                    [14, 62, 30],
                    [6,   2,  9]])
 
-    tree = kdtree(dt)
+    tree = kdtree(dt, max_profundidad=5)
     pprint(tree)
+
+    # print(busqueda_knn(tree, np.array([5, 1, 8]), 3))
 
 # -----------------------------------------------------------------------------
 
