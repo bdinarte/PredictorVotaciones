@@ -137,6 +137,60 @@ def seleccionar_atributo(datos):
 
 # -----------------------------------------------------------------------------
 
+def dividir(datos, atributo):
+    """
+    Divide los datos en dos usando un atributo como criterio.
+
+    :param datos: 2D np.array
+    Para este caso los datos son los que tiene un nodo en específico
+    :param atributo: Indice de una columna de los `datos`
+    Se usa como criterio para ordenar los datos y para luego hacer la división
+    :return: Diccionario con la siguiente información:
+
+        "ATRIBUTO": índice de la columna utilizado para dividir,
+        "INDICE_MEDIO": índice de la fila utilizada para dividir,
+        "VECTOR_MEDIO": fila en la posición `INDICE_MEDIO`,
+        "DATOS_IZQUIERDA": datos donde atributo es < al del vector medio
+        "DATOS_DERECHA": datos donde el atributo es > al del vector medio
+
+    :raises IndexError: En caso que `datos` este vacío
+
+    NOTAS:
+        ♣ Si solo queda una fila, los dos hijos quedan vacios (no en None)
+        ♣ Si solo quedan dos filas, el hijo derecho queda vacío (no en None)
+
+    Ejemplos:
+    >>> atributo = 2
+    >>> datos = np.array([[22, 38, 21],
+    ...                   [20, 50, 24],
+    ...                   [16, 44, 27], # <-- Se divide aquí
+    ...                   [14, 62, 30],
+    ...                   [18, 56, 33]])
+    >>> resultado = dividir(datos, atributo)
+    >>> resultado["VECTOR_MEDIO"]
+    array([16, 44, 27])
+    >>> resultado["DATOS_IZQUIERDA"]
+    array([[22, 38, 21],
+           [20, 50, 24]])
+    >>> resultado["DATOS_DERECHA"]
+    array([[14, 62, 30],
+           [18, 56, 33]])
+    """
+
+    tamanho_datos = len(datos)
+    mitad = int(tamanho_datos // 2)
+
+    return {
+        "ATRIBUTO": atributo,
+        "INDICE_MEDIO": mitad,
+        "VECTOR_MEDIO": datos[mitad],
+        "DATOS_IZQUIERDA": datos[0: mitad],
+        "DATOS_DERECHA": datos[mitad + 1: tamanho_datos]
+    }
+
+
+# -----------------------------------------------------------------------------
+
 
 def cercano(datos, vector_x):
     """
