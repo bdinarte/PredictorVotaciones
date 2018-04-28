@@ -22,6 +22,7 @@ def k_fold_cross_validation(datos, clasificador,
         B. Entrenar el clasificador
         C. Ejecutar el clasificador para obtener el error
     4. El error se convierte en el promedio de los errores obtenidos
+    NOTA: El clasificador también es conocido como modelo
     :param datos: Lista
     :param clasificador: TODO: Por definir
     :param porcentaje_pruebas: Porcentaje de los `datos` para pruebas
@@ -40,12 +41,12 @@ def k_fold_cross_validation(datos, clasificador,
 
     for k in range(k_segmentos):
         conjuntos = agrupar_segmentos(k, segmentos)
-        conjunto_pruebas = conjuntos[0]
+        conjunto_validacion = conjuntos[0]
         conjunto_entrenamiento = conjuntos[1]
         # TODO: Se entrena el clasificador
         # clasificador = entrenar(clasificador, conjunto_entrenamiento)
         # TODO: Se ejecuta el clasificador
-        # errores.append(clasificar(clasificador, conjunto_pruebas))
+        # errores.append(clasificar(clasificador, conjunto_validacion))
 
     return sum(errores)
 
