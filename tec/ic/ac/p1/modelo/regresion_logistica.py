@@ -6,7 +6,6 @@ from modelo.normalizacion import normalize
 _CSV_COLUMN_DEFAULTS = [[0], [''], [0], [''], [''], [''], [''], [''], [''],
                         [0], [''], [''], [''], [''], [''], [0], [0], [0],
                         [0], [0], [0], [0], [''], ['']]
-
 _CSV_COLUMNS = ['VOTANTE', 'CANTON', 'EDAD', 'ES URBANO', 'SEXO',
                 'ES DEPENDIENTE', 'ESTADO VIVIENDA', 'E.HACINAMIENTO',
                 'ALFABETIZACION', 'ESCOLARIDAD PROMEDIO',
@@ -15,19 +14,14 @@ _CSV_COLUMNS = ['VOTANTE', 'CANTON', 'EDAD', 'ES URBANO', 'SEXO',
                 'SUPERFICIE', 'DENSIDAD POBLACION',
                 'VIVIENDAS INDIVIDUALES OCUPADAS', 'PROMEDIO DE OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA', 'VOTO_R1', 'VOTO_R2']
-
-_SHUFFLE_BUFFER = 1000
-
-data = obtener_dataframe('../archivos/pruebas.csv')
-
 numeric_cols = ['EDAD', 'ESCOLARIDAD PROMEDIO', 'POBLACION TOTAL',
                 'SUPERFICIE', 'DENSIDAD POBLACION',
                 'VIVIENDAS INDIVIDUALES OCUPADAS', 'PROMEDIO DE OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
 
-data = normalize(data, numeric_cols, 'os')
+data = obtener_dataframe('../archivos/pruebas.csv')
 
-print(data)
+data = normalize(data, numeric_cols, 'os')
 
 
 def __build_model_columns():
@@ -79,8 +73,21 @@ def __build_model_columns():
     return numeric_tf_cols + categoric_tf_cols
 
 
-def entrenar(datos, regularizacion):
-    pass
+def __build_estimator(model_dir, learning_rate=0.1, _L1_over_L2 = True):
+
+    columns = __build_model_columns()
+    run_config = tf.estimator.RunConfig().replace(
+        session_config=tf.ConfigProto(device_count={'GPU':0}))
+    _L1, _L2 = (1, 0) if _L1_over_L2 else (0, 1)
+
+    regularization = tf.train.FtrlOptimizer(learning_rate=learning_rate,
+                                            l1_regularization_strength=_L1,
+                                            l2_regularization_strength=_L2)
+
+    return tf.estimator.LinearClassifier(model_dir=model_dir,
+                                         feature_columns=columns,
+                                         config=run_config,
+                                         optimizer=regularization)
 
 
 def __input_fn(data_file, num_epochs, shuffle, batch_size):
@@ -107,3 +114,7 @@ def __input_fn(data_file, num_epochs, shuffle, batch_size):
     features, labels = iterator.get_next()
     return features, labels
 
+
+def regresion_logistica(train_data, validation_data, regularization,
+    holdout_data):
+    pass
