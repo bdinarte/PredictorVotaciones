@@ -6,7 +6,7 @@ from datetime import datetime
 
 from modelo.manejo_archivos import guardar_como_csv
 from modelo.normalizacion import reg_log_normalize
-
+from tec.ic.ia.pc1.g03 import *
 
 _CSV_COLUMN_DEFAULTS = [[0], [''], [0], [''], [''], [''], [''], [''], [''],
                         [0], [''], [''], [''], [''], [''], [0], [0], [0],
@@ -18,13 +18,15 @@ _CSV_COLUMNS = ['VOTANTE', 'CANTON', 'EDAD', 'ES URBANO', 'SEXO',
                 'N.EXTRANJERO', 'C.DISCAPACIDAD', 'POBLACION TOTAL',
                 'SUPERFICIE', 'DENSIDAD POBLACION',
                 'VIVIENDAS INDIVIDUALES OCUPADAS', 'PROMEDIO DE OCUPANTES',
-                'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA', 'VOTO_R1',
-                'VOTO_R2']
+                'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA', 'VOTO_R1', 'VOTO_R2']
 numeric_cols = ['EDAD', 'ESCOLARIDAD PROMEDIO', 'POBLACION TOTAL',
                 'SUPERFICIE', 'DENSIDAD POBLACION',
                 'VIVIENDAS INDIVIDUALES OCUPADAS', 'PROMEDIO DE OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
 _SHUFFLE_BUFFER = 1000
+
+# TODO: IMPORTANTE! Agregar _CSV_COLUMNS como primer elemento del resultado
+# del simulador
 
 
 # ---------------------- Funciones 'públicas' ---------------------------------
@@ -172,7 +174,7 @@ def __save_data_file(data_list, prefix):
 
 
 def main():
-    pass
+    print('a')
 
 
 if __name__ == '__main__':
