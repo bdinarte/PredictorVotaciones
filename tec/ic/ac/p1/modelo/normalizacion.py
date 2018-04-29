@@ -2,7 +2,7 @@
 import pandas as pd
 
 
-def normalize(data, attribute_to_norm, scale_function='fs'):
+def reg_log_normalize(data, attribute_to_norm, scale_function='fs'):
     """
     feature scaling(default), 'ss' standard dev, 'os' overmax scaling
     :param data: dataframe
