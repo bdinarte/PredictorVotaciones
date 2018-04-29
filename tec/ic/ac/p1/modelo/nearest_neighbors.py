@@ -13,18 +13,19 @@ Clasificador K-Nearest-Neightbor utilizando kd-Tree
 NOTAS:
 
     ♣ Resulta mejor cuando hay más ejemplos que dimensiones
-    ♣ k también representa el número de dimensiones del kd-Tree
+    ♣ Para clasificar se usa el voto por mayoría de los k vecinos más cercanos
 
     ♣ TODO: Encontrar el k más óptimo con cross-validation
     ♣ k debe ser impar para evitar empates (pág 738)
 
 """
 
+import sys
+sys.path.append('..')
+
 import numpy as np
 from pprint import pprint
-
-# TODO: Editar para que funcione fuera del IDE
-from p1.util.timeit import timeit
+from util.timeit import timeit
 
 # -----------------------------------------------------------------------------
 
@@ -34,16 +35,16 @@ from p1.util.timeit import timeit
 # Se antepone una letra para que las propiedades de ese nodo
 # sean mostradas en ese orden. Esto con fines de depuración.
 
-ATRIBUTO = "A. ATRIBUTO_USADO"
-INDICE_MEDIO = "B. INDICE_MEDIO"
-VECTOR_MEDIO = "C. VECTOR_MEDIO"
-DATOS_IZQUIERDA = "D. NODO_IZQUIERDO"
-DATOS_DERECHA = "E. NODO_DERECHO"
+ATRIBUTO = 'A. ATRIBUTO_USADO'
+VALOR_ATRIBUTO = 'B. VALOR_USADO'
+VECTOR_MEDIO = 'C. VECTOR_MEDIO'
+DATOS_IZQUIERDA = 'D. NODO_IZQUIERDO'
+DATOS_DERECHA = 'E. NODO_DERECHO'
 
 # -----------------------------------------------------------------------------
 
 
-def kdtree(datos, max_profundidad=2):
+def kdtree(datos, max_profundidad=None):
 
     """
     Crea el kd-Tree como un diccionario anidado.
@@ -62,11 +63,17 @@ def kdtree(datos, max_profundidad=2):
     if max_profundidad is 0:
         return None
 
+    if type(datos) is list:
+        datos = np.array(datos)
+
     # Para que todos los atributos tengan la misma escala
     # datos = normalizar(datos)
 
     tamanho_datos = len(datos)
     cant_atributos = len(datos[0])
+
+    if max_profundidad is None:
+        max_profundidad = cant_atributos
 
     # Máscara para saber cuales atributos ya ha sido usados y no repetir
     atributos_no_usados = np.ones(cant_atributos, dtype=bool)
@@ -84,7 +91,7 @@ def kdtree_aux(datos, atributos_no_usados, max_profundidad):
     Función de apoyo para kdtree(datos). Esto para que dicha funcíón no
     tenga que recibir el argumento `atributos_no_usados`.
 
-    :param datos: Lista de listas con todos los elementos númericos
+    :param datos: np.array donde todos los elementos son númericos
     :param atributos_no_usados: np.array con elementos booleanos.
     Un True representa que el atributo en esa misma posición en los datos
     no ha sido utilizado para dividir un nodo.
@@ -100,10 +107,13 @@ def kdtree_aux(datos, atributos_no_usados, max_profundidad):
 
     tamanho_datos = len(datos)
 
+    if tamanho_datos < 1:
+        return None
+
     if tamanho_datos == 1 or max_profundidad <= 1:
         return datos
 
-    # Si no cumple entonces retorna None de manera implícita
+    # Si no cumple entonces retorna un None
     if tamanho_datos > 1:
 
         # Se copia para no alterar el del padre
@@ -116,7 +126,7 @@ def kdtree_aux(datos, atributos_no_usados, max_profundidad):
         # Se marca el atributo seleccionado como usado
         atributos_no_usados[atributo] = False
 
-        # Se ordenan con base al atributo selecionado
+        # Se ordenan con base al atributo seleccionado
         datos = ordenar(datos, atributo)
 
         # Se parte el árbol según al atributo seleccionado
@@ -125,7 +135,6 @@ def kdtree_aux(datos, atributos_no_usados, max_profundidad):
         derecha = nodo[DATOS_DERECHA]
 
         # Se aplica recursivamente en los hijos
-
         nodo[DATOS_IZQUIERDA] = \
             kdtree_aux(izquierda, atributos_no_usados, max_profundidad - 1)
 
@@ -133,6 +142,73 @@ def kdtree_aux(datos, atributos_no_usados, max_profundidad):
             kdtree_aux(derecha, atributos_no_usados, max_profundidad - 1)
 
         return nodo
+
+# -----------------------------------------------------------------------------
+
+
+def knn(arbol, consulta, k_vecinos, recorrido=False):
+    """
+    Busca los `k_vecinos` más cercanos y sus distancias.
+    :param arbol: Diccionario kd-Tree previamente creado
+    :param consulta: np.array con la misma estructura que tienen
+    las muestras que se utilizaron para crear el kd-tree
+    :param k_vecinos: Cantidad máxima de vecinos más cercanos
+    :param recorrido: True si se desea obtener la lista de nodos
+    que se tuvieron que recorrer antes de llegar a la hoja (sin incluirla)
+    :return: (vecinos_mas_cercanos, distancias_de_cada_vecino)
+    """
+
+    vecinos = list()
+    nodo_actual = arbol
+
+    # Se recorren los nodos hasta llegar a una hoja
+    while type(nodo_actual) == dict:
+
+        vecino = nodo_actual[VECTOR_MEDIO]
+        vecinos.append(vecino)
+
+        # Indíce del atributo que se usó para dividir
+        atributo = nodo_actual[ATRIBUTO]
+
+        v_atrib_consulta = consulta[atributo]
+        v_atrib_actual = nodo_actual[VALOR_ATRIBUTO]
+
+        # Si hay empate se testea la distancia entre la consulta
+        # y los dos hijos. Se elige el camino con menor distancia
+        if v_atrib_consulta == v_atrib_actual:
+
+            test_izq = nodo_actual[DATOS_IZQUIERDA][VECTOR_MEDIO]
+            dist_izq = distancia(consulta[atributo], test_izq)
+
+            test_der = nodo_actual[DATOS_DERECHA][VECTOR_MEDIO]
+            dist_der = distancia(consulta[atributo], test_der)
+
+            # Si la distancia entre la consulta y el hijo de la izquierda
+            # es menor que el de la derecha, se resta un 1 para que funcione
+            # en el siguiente `if`
+            v_atrib_consulta += -1 if dist_izq <= dist_der else 1
+
+        if v_atrib_consulta < v_atrib_actual:
+            nodo_actual = nodo_actual[DATOS_IZQUIERDA]
+
+        else:
+            nodo_actual = nodo_actual[DATOS_DERECHA]
+
+    # Si ya no es un diccionario, se trata de una hoja
+    # que en este caso es una lista, de lo contrario puede ser
+    # None por lo que no hay que aplicar ninguna operación
+    if type(nodo_actual) != list:
+
+        vecinos = np.array(vecinos)
+        nodos_recorridos = np.copy(vecinos)
+        vecinos = np.append(nodo_actual, vecinos, axis=0)
+        mas_cercanos, distancias = cercanos(vecinos, consulta, k_vecinos)
+
+        if not recorrido:
+            return mas_cercanos, distancias
+        else:
+            return mas_cercanos, distancias, nodos_recorridos
+
 
 # -----------------------------------------------------------------------------
 
@@ -259,12 +335,12 @@ def dividir(datos, atributo):
     ...                   [14, 62, 30],
     ...                   [18, 56, 33]])
     >>> resultado = dividir(datos, atributo)
-    >>> resultado["VECTOR_MEDIO"]
+    >>> resultado[VECTOR_MEDIO]
     array([16, 44, 27])
-    >>> resultado["DATOS_IZQUIERDA"]
+    >>> resultado[DATOS_IZQUIERDA]
     array([[22, 38, 21],
            [20, 50, 24]])
-    >>> resultado["DATOS_DERECHA"]
+    >>> resultado[DATOS_DERECHA]
     array([[14, 62, 30],
            [18, 56, 33]])
     """
@@ -274,7 +350,7 @@ def dividir(datos, atributo):
 
     return {
         ATRIBUTO: atributo,
-        INDICE_MEDIO: mitad,
+        VALOR_ATRIBUTO: datos[mitad][atributo],
         VECTOR_MEDIO: datos[mitad],
         DATOS_IZQUIERDA: datos[0: mitad],
         DATOS_DERECHA: datos[mitad + 1: tamanho_datos]
@@ -305,40 +381,45 @@ def distancia(vector_x, vector_y):
 # -----------------------------------------------------------------------------
 
 
-def cercano(datos, vector_x):
+def cercanos(datos, consulta, k_vecinos=1):
     """
-    Obtiene la fila de los datos que se parece más al vector de entrada.
+    Obtiene lax filas que se parece más al vector de entrada.
 
     :param datos: 2D np.array
     Para este caso los datos son los que tiene un nodo en específico
 
-    :param vector_x: 1D np.array
-    :return: 1D np.array más cercano dentro de los `datos`
+    :param consulta: 1D np.array
+    :param k_vecinos: Cantidad máxima de vecinos a retornar
+    :return:
+        ♣ 2D np.array, más cercanos dentro de los `datos`
+        ♣ Lista de distancias en el mismo orden
 
     Ejemplos:
     >>> datos = np.array([[  1,  10,   3],
     ...                   [ 34,  56,  43],
     ...                   [123,   9, 120]])
-    >>> cercano(datos, np.array([50, 40, 30]))
-    array([34, 56, 43])
-    >>> cercano(datos, np.array([80, 5, 100]))
-    array([123,   9, 120])
+    >>> vecinos, distancias = cercanos(datos, np.array([50, 40, 30]))
+    >>> vecinos
+    array([[34, 56, 43]])
+    >>> distancias
+    array([26.0959767])
+    >>> vecinos, distancias = cercanos(datos, np.array([80, 5, 100]), 2)
+    >>> vecinos
+    array([[123,   9, 120],
+           [ 34,  56,  43]])
+    >>> distancias
+    array([47.59201614, 89.25245095])
     """
 
-    # El más cercano por el momento es la primera fila
-    vector_mejor = datos[0]
-    distancia_mejor = distancia(vector_x, datos[0])
+    # Se calcula todas las distancias
+    distancias = [distancia(consulta, vector) for vector in datos]
+    distancias = np.array(distancias)
 
-    # Se empieza desde datos[1:] porque el [0] ya fue medido
-    for vector_actual in datos[1:]:
-        distancia_actual = distancia(vector_x, vector_actual)
+    # Se ordenan las distancias de menor a mayor y se toman las
+    # primeras igual a `k_vecinos`
+    orden = np.argsort(distancias)
 
-        # Si se obtuvo menos distancia entonces es mejor
-        if distancia_actual < distancia_mejor:
-            distancia_mejor = distancia_actual
-            vector_mejor = vector_actual
-
-    return vector_mejor
+    return datos[orden][0:k_vecinos], distancias[orden][0:k_vecinos]
 
 # -----------------------------------------------------------------------------
 
@@ -367,10 +448,19 @@ def ejemplo_kdtree():
                    [14, 62, 30],
                    [6,   2,  9]])
 
-    tree = kdtree(dt, max_profundidad=5)
+    tree = kdtree(dt, max_profundidad=4)
+    print("Kd-Tree")
     pprint(tree)
 
-    # print(busqueda_knn(tree, np.array([5, 1, 8]), 3))
+    consulta = np.array([14, 62, 30])
+    print("Consulta con k = 2: " + str(consulta))
+
+    # Vecinos, distancias, nodos_recorridos
+    v, d, r = knn(tree, consulta, k_vecinos=2, recorrido=True)
+    print("K vecinos más cercanos: \n" + str(v))
+    print("Distancias de los k vecinos: " + str(d))
+    print("Nodos recorridos: " + str(r))
+
 
 # -----------------------------------------------------------------------------
 
