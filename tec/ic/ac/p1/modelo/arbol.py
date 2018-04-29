@@ -3,6 +3,29 @@ from math import log
 from texttable import Texttable
 
 
+"""
+# Pseudocodigo del arbol de decision  
+
+def decision_tree_learning(examples, attrs, parent_examples=()):
+    if len(examples) == 0:
+        return plurality_value(parent_examples)
+    elif all_same_class(examples):
+        return DecisionLeaf(examples[0][target])
+    elif len(attrs) == 0:
+        return plurality_value(examples)
+    else:
+        A = choose_attribute(attrs, examples)
+        tree = DecisionFork(A, dataset.attrnames[A], plurality_value(examples))
+        for (v_k, exs) in split_by(A, examples):
+            subtree = decision_tree_learning(
+                exs, removeall(A, attrs), examples)
+            tree.add(v_k, subtree)
+        return tree
+"""
+
+
+# ---------------------------------------------------------------------
+
 class DataSet:
     def __init__(self, data):
         self._data = data
@@ -31,6 +54,8 @@ class DataSet:
         return table.draw().__str__()
 
 
+# ---------------------------------------------------------------------
+
 class Feature:
     def __init__(self, column, data):
         self._name = data[0][column]
@@ -54,6 +79,8 @@ class Feature:
     def __str__(self):
         return self._name
 
+
+# ---------------------------------------------------------------------
 
 class FeatureValue:
     def __init__(self, name):
