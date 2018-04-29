@@ -1,7 +1,12 @@
 
 import tensorflow as tf
-from modelo.manejo_archivos import obtener_dataframe, guardar_como_csv
-from modelo.normalizacion import normalize
+
+from pandas import DataFrame
+from datetime import datetime
+
+from modelo.manejo_archivos import guardar_como_csv
+from modelo.normalizacion import reg_log_normalize
+
 
 _CSV_COLUMN_DEFAULTS = [[0], [''], [0], [''], [''], [''], [''], [''], [''],
                         [0], [''], [''], [''], [''], [''], [0], [0], [0],
@@ -13,15 +18,42 @@ _CSV_COLUMNS = ['VOTANTE', 'CANTON', 'EDAD', 'ES URBANO', 'SEXO',
                 'N.EXTRANJERO', 'C.DISCAPACIDAD', 'POBLACION TOTAL',
                 'SUPERFICIE', 'DENSIDAD POBLACION',
                 'VIVIENDAS INDIVIDUALES OCUPADAS', 'PROMEDIO DE OCUPANTES',
-                'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA', 'VOTO_R1', 'VOTO_R2']
+                'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA', 'VOTO_R1',
+                'VOTO_R2']
 numeric_cols = ['EDAD', 'ESCOLARIDAD PROMEDIO', 'POBLACION TOTAL',
                 'SUPERFICIE', 'DENSIDAD POBLACION',
                 'VIVIENDAS INDIVIDUALES OCUPADAS', 'PROMEDIO DE OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
+_SHUFFLE_BUFFER = 1000
 
-data = obtener_dataframe('../archivos/pruebas.csv')
 
-data = normalize(data, numeric_cols, 'os')
+# ---------------------- Funciones 'públicas' ---------------------------------
+
+
+def clasificador_regresion_logistica(learning_rate=0.1, regularization='None'):
+    dir_name = 'regresion_log_' + str(datetime.now().time())
+    dir_name = dir_name.replace(':', '_').replace('.', '_')
+    return __build_estimator(dir_name, learning_rate, regularization)
+
+
+def entrenar_regr_log(classifier, train_data_list):
+    data = DataFrame(train_data_list)
+    data = reg_log_normalize(data, numeric_cols, 'os')
+    train_file = __save_data_file(data, 'train_data_')
+    classifier.train(input_fn=lambda: __train_input_fn(train_file))
+    return classifier
+
+
+def validar_regr_log(classifier, test_data_list):
+    data = DataFrame(test_data_list)
+    data = reg_log_normalize(data, numeric_cols, 'os')
+    validation_file = __save_data_file(data, 'validat_data_')
+    results = classifier.evaluate(input_fn=lambda: __eval_input_fn(
+        validation_file))
+    return results
+
+
+# ---------------------- Funciones de la regresion ----------------------------
 
 
 def __build_model_columns():
@@ -73,21 +105,25 @@ def __build_model_columns():
     return numeric_tf_cols + categoric_tf_cols
 
 
-def __build_estimator(model_dir, learning_rate=0.1, _L1_over_L2 = True):
+def __build_estimator(model_dir, learning_rate=0.1, regularization='None'):
 
     columns = __build_model_columns()
     run_config = tf.estimator.RunConfig().replace(
-        session_config=tf.ConfigProto(device_count={'GPU':0}))
-    _L1, _L2 = (1, 0) if _L1_over_L2 else (0, 1)
+        session_config=tf.ConfigProto(device_count={'GPU': 0}))
+    _L1, _L2 = (1, 0) if regularization == 'l1' else (0, 1)
 
-    regularization = tf.train.FtrlOptimizer(learning_rate=learning_rate,
-                                            l1_regularization_strength=_L1,
-                                            l2_regularization_strength=_L2)
+    optimizer = tf.train.FtrlOptimizer(learning_rate=learning_rate,
+                                       l1_regularization_strength=_L1,
+                                       l2_regularization_strength=_L2)
+    if regularization == 'None':
+        return tf.estimator.LinearClassifier(model_dir=model_dir,
+                                             feature_columns=columns,
+                                             config=run_config)
 
     return tf.estimator.LinearClassifier(model_dir=model_dir,
                                          feature_columns=columns,
                                          config=run_config,
-                                         optimizer=regularization)
+                                         optimizer=optimizer)
 
 
 def __input_fn(data_file, num_epochs, shuffle, batch_size):
@@ -115,6 +151,31 @@ def __input_fn(data_file, num_epochs, shuffle, batch_size):
     return features, labels
 
 
-def regresion_logistica(train_data, validation_data, regularization,
-    holdout_data):
+def __train_input_fn(train_file, epochs_between_evals=2, batch_size=40):
+    return __input_fn(train_file, epochs_between_evals, True, batch_size)
+
+
+def __eval_input_fn(validat_file, epochs=1, batch=40):
+    return __input_fn(validat_file, epochs, False, batch)
+
+
+# ---------------------- Funciones auxiliares ---------------------------------
+
+
+def __save_data_file(data_list, prefix):
+    data_df = DataFrame(data_list)
+    filename = prefix + str(datetime.now().time()) + '.csv'
+    filename = filename.replace(':', '_').replace('.', '_')
+
+    guardar_como_csv(data_df, filename)
+    return filename
+
+
+def main():
     pass
+
+
+if __name__ == '__main__':
+    main()
+
+
