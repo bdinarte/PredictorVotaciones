@@ -227,6 +227,32 @@ def knn(arbol, consulta, k_vecinos, recorrido=False):
 # -----------------------------------------------------------------------------
 
 
+def predecir(arbol, consulta, k_vecinos=5):
+    """
+    Predice una etiqueta con base en una consulta.
+    :param arbol: Diccionario kd-Tree previamente creado
+    :param consulta: np.array con la misma estructura que tienen
+    las matriz que se utilizaron para crear el kd-tree
+    :param k_vecinos: Cantidad máxima de vecinos más cercanos
+    :return: etiqueta
+    """
+
+    etiquetas = knn(arbol, consulta, k_vecinos)[1]
+
+    # Diccionario (etiqueta, freacuencia)
+    votos = dict()
+    for i in range(len(etiquetas)):
+
+        if votos.__contains__(etiquetas[i]):
+            votos[etiquetas[i]] += 1
+        else:
+            votos[etiquetas[i]] = 1
+
+    return max(votos, key=votos.get)
+
+# -----------------------------------------------------------------------------
+
+
 def seleccionar(matriz, atribs_no_usados):
     """
     Selecciona el atributo que se usará para bifurcar el nodo.
@@ -515,10 +541,10 @@ def ejemplo_kdtree():
                    'ETIQ_4',
                    'ETIQ_5',
                    'ETIQ_6',
-                   'ETIQ_7',
+                   'ETIQ_1',
                    'ETIQ_8',
                    'ETIQ_9',
-                   'ETIQ_10',
+                   'ETIQ_1',
                    'ETIQ_11'])
 
     tree = kdtree((dt, et), max_profundidad=2)
@@ -529,12 +555,16 @@ def ejemplo_kdtree():
     print("Consulta con k = 2: " + str(consulta))
 
     # Vecinos, etiquetas, distancias, nodos_recorridos
-    v, e, d, r = knn(tree, consulta, k_vecinos=20, recorrido=True)
+    v, e, d, r = knn(tree, consulta, k_vecinos=5, recorrido=True)
 
     print("K vecinos más cercanos: \n" + str(v))
     print("Etiquetas de los K vecinos: \n" + str(e))
     print("Distancias de los k vecinos: \n" + str(d))
     print("Nodos recorridos: \n" + str(r))
+
+    print("Realizando predicción")
+    x = predecir(tree, consulta, k_vecinos=5)
+    pprint(x)
 
 
 # -----------------------------------------------------------------------------
