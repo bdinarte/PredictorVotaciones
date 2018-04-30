@@ -5,7 +5,7 @@ from pandas import DataFrame
 from datetime import datetime
 
 from modelo.manejo_archivos import guardar_como_csv
-from modelo.normalizacion import reg_log_normalize, categoric_to_numeric
+from modelo.normalizacion import normalize, categoric_to_numeric
 from tec.ic.ia.pc1.g03 import *
 
 _CSV_COLUMN_DEFAULTS = [[''], [0], [0], [0], [0], [0], [0], [0], [0], [0],
@@ -35,7 +35,7 @@ def clasificador_regresion_logistica(learning_rate=0.1, regularization='None'):
 def entrenar_regr_log(classifier, train_data_list):
     data = DataFrame(train_data_list, columns=_CSV_COLUMNS)
     data = categoric_to_numeric(data)
-    data = reg_log_normalize(data, cols_to_norm, 'os')
+    data = normalize(data, cols_to_norm, 'os')
     train_file = __save_data_file(data, 'train_data_')
     classifier.train(input_fn=lambda: __train_input_fn(train_file))
     return classifier
@@ -44,7 +44,7 @@ def entrenar_regr_log(classifier, train_data_list):
 def validar_regr_log(classifier, test_data_list):
     data = DataFrame(test_data_list, columns=_CSV_COLUMNS)
     data = categoric_to_numeric(data)
-    data = reg_log_normalize(data, cols_to_norm, 'os')
+    data = normalize(data, cols_to_norm, 'os')
     validation_file = __save_data_file(data, 'validat_data_')
     results = classifier.evaluate(input_fn=lambda: __eval_input_fn(
         validation_file))
