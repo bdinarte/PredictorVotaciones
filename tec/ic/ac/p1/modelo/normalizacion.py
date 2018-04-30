@@ -62,7 +62,7 @@ def categoric_to_numeric(data):
         'NO EXTRANJERO': 0, 'EXTRANJERO': 1})
     data['C.DISCAPACIDAD'] = data['C.DISCAPACIDAD'].map({
         'NO DISCAPACITADO': 0, 'DISCAPACITADO': 1})
-    data['VOTO_R1'] = data['VOTO_R2'].map({
+    '''data['VOTO_R1'] = data['VOTO_R2'].map({
         'ACCESIBILIDAD SIN EXCLUSION': 0,
         'ACCION CIUDADANA': 1,
         'ALIANZA DEMOCRATA CRISTIANA': 2,
@@ -80,5 +80,5 @@ def categoric_to_numeric(data):
     data['VOTO_R2'] = data['VOTO_R2'].map({
         'RESTAURACION NACIONAL': 0,
         'ACCION CIUDADANA': 1,
-        'NULO': 2, 'BLANCO': 3})
+        'NULO': 2, 'BLANCO': 3})'''
     return data
