@@ -26,6 +26,48 @@ def decision_tree_learning(examples, attrs, parent_examples=()):
 
 # ---------------------------------------------------------------------
 
+class Nodo:
+    def __init__(self, valor):
+        self.info = valor
+        self.hijos = []
+
+
+# ---------------------------------------------------------------------
+
+class Arboln:
+    def __init__(self):
+        self.__raiz = None
+
+    def __buscar(self, valor, hermanos=None, pos=0):
+
+        if pos >= len(hermanos):
+            return None
+
+        if hermanos[pos].info == valor:
+            return hermanos[pos]
+
+        nodo = self.__buscar(valor, hermanos[pos].hijos)
+        if nodo != None:
+            return nodo
+
+        nodo = self.__buscar(valor, hermanos, pos + 1)
+        if nodo != None:
+            return nodo
+
+        return None
+
+    def buscar(self, valor):
+
+        if self.__raiz == valor:
+            return True
+
+        if self.__buscar(valor, self.__raiz.hijos) != None:
+            return True
+        return False
+
+
+# ---------------------------------------------------------------------
+
 class DataSet:
     def __init__(self, data):
         self._data = data
