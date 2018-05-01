@@ -12,6 +12,8 @@ from modelo.manejo_archivos import guardar_como_csv
 
 tf.enable_eager_execution()
 
+# --------------------------- Constantes --------------------------------------
+
 data_columns = ['CANTON', 'EDAD', 'ES_URBANO', 'SEXO', 'ES_DEPENDIENTE',
                 'ESTADO_VIVIENDA', 'E.HACINAMIENTO', 'ALFABETIZACION',
                 'ESCOLARIDAD_PROMEDIO', 'ASISTENCIA_EDUCACION',
@@ -24,10 +26,25 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
+walk_data_times = 100
+available_activations = ['relu', 'softmax']
+shuffle_buffer_size = 10000
+batch_size = 100
+
+# ------------------------ Funciones públicas ---------------------------------
 
 
-def red(data_list, normalization, prefijo):
-
+def red(data_list, normalization, prefix, layer_amount=3,
+        units_per_layer=10, activation_f='relu', predicting='r1'):
+    #
+    # 'relu' por defecto en caso de no existir la ingresada
+    if activation_f not in available_activations:
+        activation_f = 'relu'
+    #
+    # por defecto se requiere una capa como mínimo
+    layer_amount -= 2
+    if layer_amount < 1:
+        layer_amount = 1
     #
     # Setup de los datos generados por el simulador
     data = DataFrame(data_list, columns=data_columns)
@@ -40,39 +57,55 @@ def red(data_list, normalization, prefijo):
     data = data.drop('CANTON', axis=1)
     #
     # Generar archivos de datos
-    filename = __save_data_file(data, prefijo)
-
+    filename = __save_data_file(data, prefix)
     #
     # Parsear el archivo con data
     train_dataset = tf.data.TextLineDataset(filename)
-    train_dataset = train_dataset.map(parse_csv)
-    train_dataset = train_dataset.batch(32)
+    train_dataset = train_dataset.map(__parse_csv)
+    train_dataset = train_dataset.shuffle(shuffle_buffer_size)
+    train_dataset = train_dataset.batch(batch_size)
+    #
+    # calcular la cantidad de atributos
+    input_shape = (21,) if predicting == 'r2_with_r1' else (20,)
+    #
+    # definir las capas para el modelo
+    nn_layers = []
+    nn_layers.append(tf.keras.layers.Dense(units_per_layer,
+                                           activation=activation_f,
+                                           input_shape=input_shape))
+    for layer in range(layer_amount):
+        nn_layers.append(tf.keras.layers.Dense(units_per_layer,
+                                               activation=activation_f))
+    #
+    # modificar la cantidad de unidades de salida segun las etiquetas
+    output_amount = 4 if predicting == 'r2_with_r1' else 15
+    nn_layers.append(tf.keras.layers.Dense(output_amount))
+    #
+    # Crear el modelo según las capas definidas
+    model = tf.keras.Sequential(nn_layers)
 
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(10, activation="relu", input_shape=(20,)),
-        tf.keras.layers.Dense(10, activation="relu"),
-        tf.keras.layers.Dense(15)
-    ])
+    return model, train_dataset
 
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.02)
+
+def entrenar(model, train_dataset):
+
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.03)
 
     train_loss_results = []
     train_accuracy_results = []
 
-    num_epochs = 101
-
-    for epoch in range(num_epochs):
+    for current_walk in range(walk_data_times):
         epoch_loss_avg = tfe.metrics.Mean()
         epoch_accuracy = tfe.metrics.Accuracy()
 
         for x, y in tfe.Iterator(train_dataset):
 
-            grads = grad(model, x, y)
+            grads = __grad(model, x, y)
             optimizer.apply_gradients(
                 zip(grads, model.variables),
                 global_step=tf.train.get_or_create_global_step())
 
-            epoch_loss_avg(loss(model, x, y))
+            epoch_loss_avg(__loss(model, x, y))
             epoch_accuracy(tf.argmax(model(x), axis=1,
                                      output_type=tf.int32), y)
 
@@ -80,25 +113,28 @@ def red(data_list, normalization, prefijo):
         train_loss_results.append(epoch_loss_avg.result())
         train_accuracy_results.append(epoch_accuracy.result())
 
-        if epoch % 50 == 0:
+        if current_walk % 33 == 0:
             print("Epoch {:03d}: Loss: {:.3f}, "
-                  "Accuracy: {:.3%}".format(epoch,
+                  "Accuracy: {:.3%}".format(current_walk,
                                             epoch_loss_avg.result(),
                                             epoch_accuracy.result()))
 
 
-def loss(model, x, y):
+# ---------------------- Funciones del modelo ---------------------------------
+
+
+def __loss(model, x, y):
     y_ = model(x)
     return tf.losses.sparse_softmax_cross_entropy(labels=y, logits=y_)
 
 
-def grad(model, inputs, targets):
+def __grad(model, inputs, targets):
     with tfe.GradientTape() as tape:
-        loss_value = loss(model, inputs, targets)
+        loss_value = __loss(model, inputs, targets)
     return tape.gradient(loss_value, model.variables)
 
 
-def parse_csv(line):
+def __parse_csv(line):
     example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
                         [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
                         [0.], [0.], [0], [0]]
@@ -123,8 +159,9 @@ def __save_data_file(df, prefix):
 
 
 def main():
-    t_data = generar_muestra_pais(100)
-    red(t_data, 'os', 'training')
+    t_data = generar_muestra_pais(500)
+    modelo, training_dataset = red(t_data, 'os', 'training', 4, 5)
+    entrenar(modelo, training_dataset)
 
 
 if __name__ == '__main__':
