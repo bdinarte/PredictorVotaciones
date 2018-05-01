@@ -64,8 +64,17 @@ def plurality_value(atributo_columna , examples):
     :return: etiqueta del atributo con mayor pluralidad
     """
 
-    plural_value = None
-    return plural_value
+    index_attr = examples[0].index(atributo_columna)
+    dictionary = {}
+    for i in range(1, len(examples)):
+        key = examples[i][index_attr]
+        if key in dictionary:
+            dictionary[key] += 1
+        else:
+            dictionary[key] = 1
+
+    return max(dictionary, key=dictionary.get)
+
 
 def get_attrnames(atributo_columna, examples):
     """
@@ -538,3 +547,5 @@ muestra_prueba = [
     ['HEREDIA', 'NO', '20', 'NO', 'PAC'],
     ['PUNTARENAS', 'NO', '20', 'NO', 'PAC']
 ]
+
+print(plurality_value('PROVINCIA', muestra_prueba))
