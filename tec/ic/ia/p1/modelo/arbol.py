@@ -1,7 +1,5 @@
-
 from math import log
 from texttable import Texttable
-
 
 """
 # Pseudocodigo del arbol de decision  
@@ -38,6 +36,9 @@ class Arboln:
     def __init__(self):
         self.__raiz = None
 
+    # ******************************************************************
+    # Funcion de busqueda, retorna el nodo encontrado o retorna None
+    # ******************************************************************
     def __buscar(self, valor, hermanos=None, pos=0):
 
         if pos >= len(hermanos):
@@ -47,23 +48,163 @@ class Arboln:
             return hermanos[pos]
 
         nodo = self.__buscar(valor, hermanos[pos].hijos)
-        if nodo != None:
+        if nodo is not None:
             return nodo
 
         nodo = self.__buscar(valor, hermanos, pos + 1)
-        if nodo != None:
+        if nodo is not None:
             return nodo
 
         return None
+
+    # ******************************************************************
+    # Funcion para buscar un valor en el arbol y decir si se encuentra o no
+    # ******************************************************************
 
     def buscar(self, valor):
 
         if self.__raiz == valor:
             return True
 
-        if self.__buscar(valor, self.__raiz.hijos) != None:
+        if self.__buscar(valor, self.__raiz.hijos) is not None:
             return True
         return False
+
+    # ******************************************************************
+    # Insertar un nuevo nodo en el arbol
+    # ******************************************************************
+
+    def insertar(self, valor, val_padre=None, pos_hijo=0):
+
+        if self.__raiz is None:
+            self.__raiz = Nodo(valor)
+            return True
+
+        if val_padre == self.__raiz.info:
+            padre = self.__raiz
+        else:
+            padre = self.__buscar(val_padre, self.__raiz.hijos, 0)
+
+        if padre is not None:
+            padre.hijos.insert(pos_hijo, Nodo(valor))
+            return True
+
+        return False
+
+    # ******************************************************************
+    # Retorna la informacion del padre con mas hijos
+    # ******************************************************************
+
+    def padre_mas_hijos(self, nodos=None, pos=0):
+
+        if nodos is None:
+            if self.__raiz is None:
+                return None
+            nodos = [self.__raiz]
+            self.__mayorpadre = self.__raiz
+
+        if pos >= len(nodos):
+            return 0
+
+        if len(nodos[pos].hijos) > len(self.__mayorpadre.hijos):
+            self.__mayorpadre = nodos[pos]
+
+        self.padre_mas_hijos(nodos[pos].hijos)
+        self.padre_mas_hijos(nodos, pos + 1)
+
+        return self.__mayorpadre.info
+
+    # ******************************************************************
+    # Retorna el nro de hijos unicos (sin hermanos) en el arbol la raiz siempre es hijo unico
+    # ******************************************************************
+
+    def hijos_unicos(self, nodos=None, pos=0):
+        if nodos is None:
+            if self.__raiz is None:
+                return 0
+            nodos = [self.__raiz]
+
+        if pos >= len(nodos):
+            return 0
+
+        h_unico = 0
+        if len(nodos) == 1:
+            h_unico = 1
+
+        h_unicos_hijos = self.hijos_unicos(nodos[pos].hijos)
+        h_unicos_hermanos = self.hijos_unicos(nodos, pos + 1)
+
+        return h_unico + h_unicos_hijos + h_unicos_hermanos
+
+    # ******************************************************************
+    # Retorna True si dos valores indicados son nodos hermanos en el arbol n-ario
+    # ******************************************************************
+
+    def son_hermanos(self, fulano, sutano, nodos=None, pos=0):
+        if nodos is None:
+            if self.__raiz is None:
+                return False
+            nodos = [self.__raiz]
+
+        if pos >= len(nodos):
+            return False
+
+        hermano = None
+        if fulano == nodos[pos].info:  # Existe Fulano
+            hermano = sutano
+        elif sutano == nodos[pos].info:  # Existe Mengano
+            hermano = fulano
+
+        if hermano is not None:  # Buscar el hermano si exite fulano o sutano
+            for nodo in nodos:
+                if hermano == nodo.info:  # Encuentra al hermano
+                    return True
+
+        encontro = self.son_hermanos(fulano, sutano, nodos[pos].hijos)
+        if encontro:
+            return True
+
+        return self.son_hermanos(fulano, sutano, nodos, pos + 1)
+
+    # ******************************************************************
+    # Recorrido en Preorden
+    # ******************************************************************
+
+    def preorden(self, nodos=None, pos=0):
+
+        if nodos is None:
+            if self.__raiz is None:
+                return
+            nodos = [self.__raiz]
+
+        if pos >= len(nodos):
+            return
+
+        print(nodos[pos].info)
+        self.preorden(nodos[pos].hijos)
+        self.preorden(nodos, pos + 1)
+
+    # ******************************************************************
+    # Retorna la cantidad de nodos en el arbol que tienen mas de n hijos
+    # ******************************************************************
+
+    def nodos_mas_hijos_de(self, n, nodos=None, pos=0):
+        if nodos is None:
+            if self.__raiz is None:
+                return 0
+            nodos = [self.__raiz]
+
+        if pos >= len(nodos):
+            return 0
+
+        cont = 0
+        if len(nodos[pos].hijos) > n:
+            cont = 1
+
+        cont += self.nodos_mas_hijos_de(n, nodos[pos].hijos)
+        cont += self.nodos_mas_hijos_de(n, nodos, pos + 1)
+
+        return cont
 
 
 # ---------------------------------------------------------------------
@@ -152,7 +293,7 @@ class FeatureValue:
 
 def create_data_set(featureValue, column, data):
     returnData = [[FeatureValue for i in range(data[0].__len__())]
-              for j in range(featureValue.get_occurences() + 1)]
+                  for j in range(featureValue.get_occurences() + 1)]
 
     returnData[0] = data[0]
     counter = 1
@@ -161,7 +302,7 @@ def create_data_set(featureValue, column, data):
         if data[row][column] == featureValue.get_name():
             returnData[counter] = data[row]
             counter += 1
-    return DataSet([row[:column] + row[column+1:] for row in returnData])
+    return DataSet([row[:column] + row[column + 1:] for row in returnData])
 
 
 # ---------------------------------------------------------------------
@@ -188,7 +329,7 @@ def entropia(q):
     :return: valor de entropia de la variable evaluada
     """
 
-    valor_entropia = -(q * log(q, 2) + (1-q) * log(1-q, 2))
+    valor_entropia = -(q * log(q, 2) + (1 - q) * log(1 - q, 2))
 
     return valor_entropia
 
@@ -215,7 +356,7 @@ def resto(conjunto_muestras):
     largo_muestra = len(conjunto_muestras)
 
     resultado = 0
-    for i in range(0, largo_muestra-1):
+    for i in range(0, largo_muestra - 1):
         muestra = conjunto_muestras[i]
 
     return resultado
@@ -247,12 +388,12 @@ def porporcion_positivos(muestra):
 # ---------------------------------------------------------------------
 
 array = [
-    ['a','s','d','f','g','Meta'],
-    [1,1,3,4,5,False],
-    [1,9,1,4,8,True],
-    [1,2,3,3,4,False],
-    [1,7,2,4,5,False],
-    [1,7,2,4,5,True]
+    ['a', 's', 'd', 'f', 'g', 'Meta'],
+    [1, 1, 3, 4, 5, False],
+    [1, 9, 1, 4, 8, True],
+    [1, 2, 3, 3, 4, False],
+    [1, 7, 2, 4, 5, False],
+    [1, 7, 2, 4, 5, True]
 ]
 
 ie_rest = [
@@ -269,7 +410,6 @@ ie_rest = [
     [True],
     [True]
 ]
-
 
 muestra_prueba = [
     ['PROVINCIA', 'TRABAJADOR', 'EDAD', 'SOLTERO', 'VOTO'],
@@ -295,7 +435,7 @@ for key in datas:
         dataSets = [DataSet for i in range(feature.get_values().__len__())]
 
         i = 0
-        for featureValue in  feature.get_values():
+        for featureValue in feature.get_values():
             dataSets[i] = create_data_set(featureValue, column, dataSet.get_data())
             i += 1
 
