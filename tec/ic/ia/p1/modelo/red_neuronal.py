@@ -1,12 +1,10 @@
 
 from pandas import DataFrame
+from sklearn.preprocessing import OneHotEncoder
+from datetime import datetime
 
-import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
-
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.model_selection import train_test_split
 
 from tec.ic.ia.pc1.g03 import generar_muestra_pais
 from modelo.normalizacion import normalize, categoric_to_numeric
@@ -28,16 +26,26 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
 
 
-def red(data_list, v_data, normalization):
+def red(data_list, normalization, prefijo):
+
+    #
+    # Setup de los datos generados por el simulador
     data = DataFrame(data_list, columns=data_columns)
+    #
+    # Normalización de las columnas densas
     data = normalize(data, cols_to_norm, normalization)
+    #
+    # Conversión de partidos a números
     data = categoric_to_numeric(data)
     data = data.drop('CANTON', axis=1)
-    guardar_como_csv(data, 'training.data')
+    #
+    # Generar archivos de datos
+    filename = __save_data_file(data, prefijo)
 
-    train_dataset = tf.data.TextLineDataset('training.data')
+    #
+    # Parsear el archivo con data
+    train_dataset = tf.data.TextLineDataset(filename)
     train_dataset = train_dataset.map(parse_csv)
-    train_dataset = train_dataset.shuffle(buffer_size=1000)
     train_dataset = train_dataset.batch(32)
 
     model = tf.keras.Sequential([
@@ -46,12 +54,12 @@ def red(data_list, v_data, normalization):
         tf.keras.layers.Dense(15)
     ])
 
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.02)
 
     train_loss_results = []
     train_accuracy_results = []
 
-    num_epochs = 500
+    num_epochs = 101
 
     for epoch in range(num_epochs):
         epoch_loss_avg = tfe.metrics.Mean()
@@ -100,44 +108,23 @@ def parse_csv(line):
     return features, label
 
 
-def setup_data(data_list, normalization):
-
-    data = DataFrame(data_list, columns=data_columns)
-    data = normalize(data, cols_to_norm, normalization)
-    data = categoric_to_numeric(data)
-    data = data.drop('CANTON', axis=1)
-
-    features = data.loc[:, ['EDAD', 'ES_URBANO', 'SEXO', 'ES_DEPENDIENTE',
-                            'ESTADO_VIVIENDA', 'E.HACINAMIENTO',
-                            'ALFABETIZACION', 'ESCOLARIDAD_PROMEDIO',
-                            'ASISTENCIA_EDUCACION', 'FUERZA_DE_TRABAJO',
-                            'SEGURO', 'N.EXTRANJERO', 'C.DISCAPACIDAD',
-                            'POBLACION_TOTAL', 'SUPERFICIE',
-                            'DENSIDAD_POBLACION',
-                            'VIVIENDAS_INDIVIDUALES_OCUPADAS',
-                            'PROMEDIO_DE_OCUPANTES', 'P.JEFAT.FEMENINA',
-                            'P.JEFAT.COMPARTIDA']]
-
-    labels = data.loc[:, ['VOTO_R1']]
-    features, labels = codificar_one_hot(features, labels)
-    return data, features, labels
+# ---------------------- Funciones auxiliares ---------------------------------
 
 
-def codificar_one_hot(features, labels):
+def __save_data_file(df, prefix):
 
-    one_hot = OneHotEncoder()
-    one_hot.fit(features)
-    features = one_hot.transform(features).toarray()
-    one_hot.fit(labels)
-    labels = one_hot.transform(labels).toarray()
+    filename = prefix + str(datetime.now().time())
+    filename = filename.replace(':', '_').replace('.', '_')
+    filename += '.data'
 
-    return features, labels
+    guardar_como_csv(df, filename)
+
+    return filename
 
 
 def main():
-    t_data = generar_muestra_pais(500)
-    v_data = generar_muestra_pais(20)
-    red(t_data, v_data, 'os')
+    t_data = generar_muestra_pais(100)
+    red(t_data, 'os', 'training')
 
 
 if __name__ == '__main__':
