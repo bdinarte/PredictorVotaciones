@@ -1,7 +1,6 @@
 # -----------------------------------------------------------------------------
 
 """
-
 Clasificador K-Nearest-Neightbor utilizando kd-Tree
 
     ♣ Basado en la sección 18.8.2 del Libro AI-A Modern Approach, 737
@@ -15,15 +14,15 @@ NOTAS:
     ♣ Resulta mejor cuando hay más ejemplos que dimensiones
     ♣ Para clasificar se usa el voto por mayoría de los k vecinos más cercanos
     ♣ TODO: Encontrar el k más óptimo con cross-validation
-
 """
 
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 
 import numpy as np
+import pandas as pd
 from pprint import pprint
-from util.timeit import timeit
+from pc1.util.timeit import timeit
 
 # -----------------------------------------------------------------------------
 
@@ -132,7 +131,7 @@ def kdtree_aux(muestras, atribs_no_usados, max_profundidad):
         # Se marca el atributo seleccionado como usado
         atribs_no_usados[atributo] = False
 
-        # Se ordenan  con base al atributo seleccionado
+        # Se ordenan con base al atributo seleccionado
         muestras = ordenar(muestras, atributo)
 
         # Se dividen las muestras con base al atributo seleccionado
@@ -155,7 +154,7 @@ def knn(arbol, consulta, k_vecinos, recorrido=False):
 
     :param arbol: Diccionario kd-Tree previamente creado
     :param consulta: np.array con la misma estructura que tienen
-    las matriz que se utilizaron para crear el kd-tree
+    las filas de la matriz que se utilizaron para crear el kd-tree
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
     :param recorrido: True si se desea obtener la lista de nodos
     que se tuvieron que recorrer antes de llegar a la hoja (sin incluirla)
@@ -163,7 +162,7 @@ def knn(arbol, consulta, k_vecinos, recorrido=False):
     :return: Tupla con la siguiente información:
         ♣ Matriz tamaño k x M, donde k_i representa un vecino
         ♣ Vector tamaño k con la etiqueta o clase de cada vecino
-        ♣ Vector tamaño con las distancias entre la consulta y los vecinos
+        ♣ Vector tamaño k con las distancias entre la consulta y los vecinos
         ♣ Matriz tamaño R x M, donde R es la cantidad de nodos recorridos
         para llegar hasta la hoja (ésta no se incluye)
     """
@@ -232,7 +231,7 @@ def predecir(arbol, consulta, k_vecinos=5):
     Predice una etiqueta con base en una consulta.
     :param arbol: Diccionario kd-Tree previamente creado
     :param consulta: np.array con la misma estructura que tienen
-    las matriz que se utilizaron para crear el kd-tree
+    las filas matriz que se utilizaron para crear el kd-tree
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
     :return: etiqueta
     """
@@ -240,6 +239,7 @@ def predecir(arbol, consulta, k_vecinos=5):
     etiquetas = knn(arbol, consulta, k_vecinos)[1]
 
     # Diccionario (etiqueta, freacuencia)
+    # Esto para tomar el voto por mayoría de los vecinos más cercanos
     votos = dict()
     for i in range(len(etiquetas)):
 
@@ -248,6 +248,7 @@ def predecir(arbol, consulta, k_vecinos=5):
         else:
             votos[etiquetas[i]] = 1
 
+    # Retorna la etiqque de quién tenga más votos
     return max(votos, key=votos.get)
 
 # -----------------------------------------------------------------------------
@@ -264,7 +265,7 @@ def seleccionar(matriz, atribs_no_usados):
     Un True representa que el atributo en esa misma posición en los muestras
     no ha sido utilizado para bifurcar un nodo.
 
-    :return: índice de la columna con mayor varianza en los `muestras`
+    :return: índice de la columna con mayor varianza en la `matriz`
 
     Ejemplos:
     >>> matriz = np.array([[1,  5, 8],
@@ -385,24 +386,27 @@ def bifurcar(muestras, atributo):
     etiquetas = muestras[1]
     tamanho_datos = len(matriz)
 
+    # Si la cantidad de filas de las matriz es par, la
+    # la mediana es la posición inferior más cercana al centro.
+    # La mediana se queda en el nodo en vez de ir hacia uno de
+    # sus hijos.
     mitad = int(tamanho_datos // 2)
     mediana = matriz[mitad]
 
+    # La mitad superior va hacia la izquierda
     mitad_matriz = matriz[0: mitad]
     mitad_etiquetas = etiquetas[0: mitad]
     izquierda = mitad_matriz, mitad_etiquetas
 
+    # La mitad inferior va hacia la derecha
     mitad_matriz = matriz[mitad + 1: tamanho_datos]
     mitad_etiquetas = etiquetas[mitad + 1: tamanho_datos]
     derecha = mitad_matriz, mitad_etiquetas
 
     return {
-        ATRIBUTO: atributo,
-        V_ATRIBUTO: mediana[atributo],
-        MEDIANA: matriz[mitad],
-        ETIQUETA: etiquetas[mitad],
-        IZQUIERDA: izquierda,
-        DERECHA: derecha
+        ATRIBUTO: atributo, V_ATRIBUTO: mediana[atributo],
+        MEDIANA: matriz[mitad], ETIQUETA: etiquetas[mitad],
+        IZQUIERDA: izquierda, DERECHA: derecha
     }
 
 # -----------------------------------------------------------------------------
@@ -435,31 +439,30 @@ def cercanos(matriz, etiquetas, consulta, k_vecinos=1):
     Obtiene lax filas que se parece más al vector de entrada.
 
     :param matriz: Matriz N x M con valores númericos
-    :param etiquetas: Vector tamaño N con las etiquetas de cada N_i de la matriz
+    :param etiquetas: Vector tamaño N con las etiquetas de cada N_i
     :param consulta: Vector tamaño N
     :param k_vecinos: Cantidad máxima de vecinos a retornar
 
     :return: Tupla con los siguiente valores:
         ♣ Matriz k x M, donde k_i es un vecino
-        ♣ Vector tamaño k con las etiquetas de cada k_i de la matriz
+        ♣ Vector tamaño k con las etiquetas de cada k_i de la matriz anterior
         ♣ Lista de distancias en el mismo orden
 
     Ejemplos:
     >>> matriz = np.array([[  1,  10,   3],
     ...                    [ 34,  56,  43],
     ...                    [123,   9, 120]])
-    >>> etiquetas = np.array(['ETIQ_1',
-    ...                       'ETIQ_2',
-    ...                       'ETIQ_3'])
+    >>> etiqs = np.array(['ETIQ_1',
+    ...                   'ETIQ_2',
+    ...                   'ETIQ_3'])
     >>> consulta = np.array([50, 40, 30])
-    >>> muestra, distancias = cercanos(matriz, etiquetas, consulta, 2)
-    >>> vecinos, etiquetas = muestra[0], muestra[1]
-    >>> vecinos
+    >>> vecs, etiqs, dists = cercanos(matriz, etiqs, consulta, 2)
+    >>> vecs
     array([[34, 56, 43],
            [ 1, 10,  3]])
-    >>> etiquetas
+    >>> etiqs
     array(['ETIQ_2', 'ETIQ_1'], dtype='<U6')
-    >>> distancias
+    >>> dists
     array([26.0959767 , 63.48228099])
     """
 
@@ -508,6 +511,71 @@ def normalizar(matriz, menor=0.0, mayor=1.0):
     difs = maxs - mins
     prom = mayor - menor
     return mayor - ((prom * (maxs - matriz)) / difs)
+
+# -----------------------------------------------------------------------------
+
+
+def preprocesar(matriz, columnas, columnas_c, reordenar=True):
+
+    """
+    A partir de la matriz de muestrss, se convierten los atributos
+    categóricos a númericos; seguidamente se normaliza la matriz.
+
+    NOTA: Se asume que las columnas que no deben ser consideredas ya han
+    sido borradas. En caso el caso particular de las elecciones, se asume
+    que la columna 'VOTO_R1' ya ha sido borrada cuando se solicita realizar
+    predicciones de 'VOTO_R2' sin utilizar 'VOTO_R1.
+
+    :param matriz: Matriz donde cada fila es una muestra
+    :param columnas:
+    :param columnas_c: Lista de los nombres de las columnas categoricas a las
+    que se les debe aplicar el algortimo ONE HOT ENCODING para convertirlas
+    :param reordenar: True si se debe aplicar 'shuffle' a las filas
+
+    :return: Tupla con la siguiente información:
+        ♣ [0] = Matriz N x M con valores númericos
+        ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
+
+    Ejemplos:
+
+    >>> mat = np.array([[2, 'CAT_1', 5, 'ETIQ_1'],
+    ...                 [3, 'CAT_2', 8, 'ETIQ_2'],
+    ...                 [7, 'CAT_3', 9, 'ETIQ_3']])
+    >>> cols = np.array(['COL_1', 'COL_2', 'COL_3', 'COL_4'])
+    >>> cols_c = ['COL_2'] # Coumna categórica
+    >>> mat, etiqs = preprocesar(mat, cols, cols_c,reordenar=False)
+    >>> mat
+    array([[0.  , 0.  , 1.  , 0.  , 0.  ],
+           [0.2 , 0.75, 0.  , 1.  , 0.  ],
+           [1.  , 1.  , 0.  , 0.  , 1.  ]])
+    >>> etiqs
+    array(['ETIQ_1', 'ETIQ_2', 'ETIQ_3'], dtype='<U11')
+    """
+
+    if type(matriz) == list:
+        matriz = np.array(matriz)
+
+    if reordenar:
+        np.random.shuffle(matriz)
+
+    # De la matriz de muestras, la última columna son las etiquetas
+    etiquetas = matriz[:, matriz.shape[1] - 1]
+    matriz = matriz[:, 0: matriz.shape[1] - 1]
+
+    # No interesa el nombre columna de las etiquetas
+    columnas = columnas[:len(columnas)-1]
+
+    # Se aplica One Hot Encoding a las columnas categóricas
+    # Por facilidad se convierte a un Dataframe y usar
+    df = pd.DataFrame(matriz, columns=columnas)
+    df = pd.get_dummies(df, columns=columnas_c)
+
+    # Por alguna razón df.as_matriz retorna una matriz de tipo
+    # str por lo que es necesario cambiar el tipo, luego se normaliza
+    matriz = df.as_matrix().astype(float)
+    matriz = normalizar(matriz)
+
+    return matriz, etiquetas
 
 # -----------------------------------------------------------------------------
 
