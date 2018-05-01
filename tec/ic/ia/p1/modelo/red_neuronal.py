@@ -1,6 +1,5 @@
 
 from pandas import DataFrame
-from sklearn.preprocessing import OneHotEncoder
 from datetime import datetime
 
 import tensorflow as tf
@@ -30,12 +29,17 @@ walk_data_times = 100
 available_activations = ['relu', 'softmax']
 shuffle_buffer_size = 10000
 batch_size = 100
+__predicting = ''
 
 # ------------------------ Funciones públicas ---------------------------------
 
 
 def red(data_list, normalization, prefix, layer_amount=3,
         units_per_layer=10, activation_f='relu', predicting='r1'):
+    #
+    # tipo de prediccion para ser leido por parse_csv
+    global __predicting
+    __predicting = predicting
     #
     # 'relu' por defecto en caso de no existir la ingresada
     if activation_f not in available_activations:
@@ -69,7 +73,7 @@ def red(data_list, normalization, prefix, layer_amount=3,
     input_shape = (21,) if predicting == 'r2_with_r1' else (20,)
     #
     # definir las capas para el modelo
-    nn_layers = []
+    nn_layers = list()
     nn_layers.append(tf.keras.layers.Dense(units_per_layer,
                                            activation=activation_f,
                                            input_shape=input_shape))
@@ -88,36 +92,38 @@ def red(data_list, normalization, prefix, layer_amount=3,
 
 
 def entrenar(model, train_dataset):
-
+    #
+    # definir el tipo de optimizacion y learning rate
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.03)
-
-    train_loss_results = []
-    train_accuracy_results = []
-
+    #
+    # recopilar la precision y perdida por pasada a los datos
+    loss_for_training = []
+    accuracy_for_training = []
+    #
+    # comenzar las pasadas a los datos para entrenar
     for current_walk in range(walk_data_times):
-        epoch_loss_avg = tfe.metrics.Mean()
-        epoch_accuracy = tfe.metrics.Accuracy()
+        current_walk_loss_avg = tfe.metrics.Mean()
+        current_walk_accuracy = tfe.metrics.Accuracy()
 
         for x, y in tfe.Iterator(train_dataset):
-
             grads = __grad(model, x, y)
             optimizer.apply_gradients(
                 zip(grads, model.variables),
                 global_step=tf.train.get_or_create_global_step())
 
-            epoch_loss_avg(__loss(model, x, y))
-            epoch_accuracy(tf.argmax(model(x), axis=1,
-                                     output_type=tf.int32), y)
-
-        # end epoch
-        train_loss_results.append(epoch_loss_avg.result())
-        train_accuracy_results.append(epoch_accuracy.result())
+            current_walk_loss_avg(__loss(model, x, y))
+            current_walk_accuracy(tf.argmax(model(x), axis=1,
+                                            output_type=tf.int32), y)
+        #
+        # salvar las metricas
+        loss_for_training.append(current_walk_loss_avg.result())
+        accuracy_for_training.append(current_walk_accuracy.result())
 
         if current_walk % 33 == 0:
             print("Epoch {:03d}: Loss: {:.3f}, "
                   "Accuracy: {:.3%}".format(current_walk,
-                                            epoch_loss_avg.result(),
-                                            epoch_accuracy.result()))
+                                            current_walk_loss_avg.result(),
+                                            current_walk_accuracy.result()))
 
 
 # ---------------------- Funciones del modelo ---------------------------------
@@ -135,12 +141,20 @@ def __grad(model, inputs, targets):
 
 
 def __parse_csv(line):
+    global __predicting
     example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
                         [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
-                        [0.], [0.], [0], [0]]
+                        [0.], [0.], [0.], [0]]
     parsed_line = tf.decode_csv(line, example_defaults)
-    features = tf.reshape(parsed_line[:-2], shape=(20,))
-    label = tf.reshape(parsed_line[-2], shape=())
+    if __predicting == 'r1':
+        features = tf.reshape(parsed_line[:-2], shape=(20,))
+        label = tf.reshape(parsed_line[-2], shape=())
+    elif __predicting == 'r2':
+        features = tf.reshape(parsed_line[:-2], shape=(20,))
+        label = tf.reshape(parsed_line[-1], shape=())
+    else:
+        features = tf.reshape(parsed_line[:-1], shape=(21,))
+        label = tf.reshape(parsed_line[-1], shape=())
     return features, label
 
 
@@ -160,7 +174,8 @@ def __save_data_file(df, prefix):
 
 def main():
     t_data = generar_muestra_pais(500)
-    modelo, training_dataset = red(t_data, 'os', 'training', 4, 5)
+    modelo, training_dataset = red(t_data, 'os', 'training', 4, 5,
+                                   predicting='r2_with_r1')
     entrenar(modelo, training_dataset)
 
 
