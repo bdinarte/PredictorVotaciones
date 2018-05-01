@@ -40,13 +40,31 @@ def decision_tree_learning(examples, attrs, parent_examples=()):
         A = choose_attribute(examples)
         tree = Arboln()
         attrnames = get_attrnames(A, examples)
-        tree = Arboln(A, dataset.attrnames[A], plurality_value(examples))
-        for (v_k, exs) in split_by(A, examples):
+        tree.insertar(A)
+        for name in attrnames:
+            tree.insertar(name, A)
+        plural_value = plurality_value(A, examples)
+
+        for (v_k, exs) in delete_attr(A, examples):
             subtree = decision_tree_learning(
-                exs, remove_all(A, attrs), examples)
+                exs, remove_attr(A, attrs), examples)
             tree.insertar(v_k, subtree)
         return tree
 
+
+def delete_attr(attr, examples):
+    """
+    Funcion utilizada para eliminar un atributo columna(attr) de un set de datos (examples)
+    :param attr: etiqueta del atributo que se va eliminar
+    :param examples: conjunto de datos al que se le eliminara la etiqueta attr
+    :return: set de datos sin el atributo columna, pasado por parametro
+    """
+    index = examples[0].index(attr)
+
+    for i in range(len(examples)):
+        del examples[i][index]
+
+    return examples
 
 def plurality_value(atributo_columna , examples):
     """
@@ -98,7 +116,7 @@ def get_attrnames(atributo_columna, examples):
 
 
 
-def remove_all(atributo_columna, attrs):
+def remove_attr(atributo_columna, attrs):
     """
     Elimina de la lista de atributos, todas las apariciones de un atributo en especifico
     :param atributo_columna: atributo que se eliminara de la lista attrs
@@ -549,3 +567,8 @@ muestra_prueba = [
 ]
 
 print(plurality_value('PROVINCIA', muestra_prueba))
+
+
+list = split_by('TRABAJADOR', muestra_prueba)
+for i in list:
+    print(i)
