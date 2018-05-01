@@ -1,4 +1,7 @@
 
+import sys
+sys.path.append('../..')
+
 from pandas import DataFrame
 from datetime import datetime
 
@@ -7,9 +10,9 @@ import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 
 from tec.ic.ia.pc1.g03 import generar_muestra_pais
-from modelo.normalizacion import normalize, categoric_to_numeric
-from modelo.normalizacion import partidos_r1_to_id, partidos_r2_to_id
-from modelo.manejo_archivos import guardar_como_csv
+from p1.modelo.normalizacion import normalize, categoric_to_numeric
+from p1.modelo.normalizacion import partidos_r1_to_id, partidos_r2_to_id
+from p1.modelo.manejo_archivos import guardar_como_csv
 
 tf.enable_eager_execution()
 
