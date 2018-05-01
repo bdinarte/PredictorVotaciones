@@ -113,7 +113,14 @@ def nn_entrenar(model, train_dataset):
 
 
 def nn_validar(model, validation_dataset):
-    pass
+    test_accuracy = tfe.metrics.Accuracy()
+
+    for x, y in tfe.Iterator(validation_dataset):
+        prediction = tf.argmax(model(x), axis=1, output_type=tf.int32)
+        test_accuracy(prediction, y)
+    #
+    # TODO: modificar el tipo de dato del retorno de precision
+    return 'Test set accuracy: {:.3%}'.format(test_accuracy.result())
 
 
 def nn_normalize(data_list, normalization):
@@ -211,13 +218,18 @@ def __save_data_file(df, prefix):
 
 
 def main():
-    data = generar_muestra_pais(3000)
-    df_data = nn_normalize(data, 'ss')
+    data = generar_muestra_pais(1000)
+    df_data = nn_normalize(data, 'os')
+    t_data = df_data.sample(frac=0.8)
+    v_data = df_data.drop(t_data.index)
     #
     # en este momento debería hacerse la cross validation a DATA
-    dataset = nn_build_dataset(df_data, 'training', predicting='r2_with_r1')
+    t_data = nn_build_dataset(t_data, 'training', predicting='r2_with_r1')
     modelo = nn(3, 5, 'relu')
-    nn_entrenar(modelo, dataset)
+    modelo, _, _ = nn_entrenar(modelo, t_data)
+
+    v_data = nn_build_dataset(v_data, 'validation', predicting='r2_with_r1')
+    print(str(nn_validar(modelo, v_data)))
 
 
 if __name__ == '__main__':
