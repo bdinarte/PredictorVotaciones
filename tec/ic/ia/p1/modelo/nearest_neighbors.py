@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 from pprint import pprint
 from pc1.util.timeit import timeit
+from sklearn.metrics import accuracy_score
 
 # -----------------------------------------------------------------------------
 
@@ -47,6 +48,7 @@ DERECHA = 'F. DERECHA'
 def kdtree(muestras, max_profundidad=100):
     """
     Crea el kd-Tree como un diccionario anidado.
+    Crear el árbol es equivalente a entrenear.
     En cada nodo se parten los matriz con base en el atributo que más varia.
 
     Se puede ver una demostración de la estructura del árbol (con matriz
@@ -148,12 +150,12 @@ def kdtree_aux(muestras, atribs_no_usados, max_profundidad):
 # -----------------------------------------------------------------------------
 
 
-def knn(arbol, consulta, k_vecinos, recorrido=False):
+def knn(arbol, muestra, k_vecinos, recorrido=False):
     """
     Busca los `k_vecinos` más cercanos y sus distancias.
 
     :param arbol: Diccionario kd-Tree previamente creado
-    :param consulta: np.array con la misma estructura que tienen
+    :param muestra: np.array con la misma estructura que tienen
     las filas de la matriz que se utilizaron para crear el kd-tree
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
     :param recorrido: True si se desea obtener la lista de nodos
@@ -180,20 +182,20 @@ def knn(arbol, consulta, k_vecinos, recorrido=False):
         # Indíce del atributo que se usó para bifurcar
         atributo = nodo_actual[ATRIBUTO]
 
-        v_atrib_consulta = consulta[atributo]
+        v_atrib_consulta = muestra[atributo]
         v_atrib_actual = nodo_actual[V_ATRIBUTO]
 
-        # Si hay empate se testea la distancia entre la consulta
+        # Si hay empate se testea la distancia entre la muestra
         # y los dos hijos. Se elige el camino con menor distancia
         if v_atrib_consulta == v_atrib_actual:
 
             test_izq = nodo_actual[IZQUIERDA][MEDIANA]
-            dist_izq = distancia(consulta[atributo], test_izq)
+            dist_izq = distancia(muestra[atributo], test_izq)
 
             test_der = nodo_actual[DERECHA][MEDIANA]
-            dist_der = distancia(consulta[atributo], test_der)
+            dist_der = distancia(muestra[atributo], test_der)
 
-            # Si la distancia entre la consulta y el hijo de la izquierda
+            # Si la distancia entre la muestra y el hijo de la izquierda
             # es menor que el de la derecha, se resta un 1 para que funcione
             # en el siguiente `if`
             v_atrib_consulta += -1 if dist_izq <= dist_der else 1
@@ -216,7 +218,7 @@ def knn(arbol, consulta, k_vecinos, recorrido=False):
         etiquetas = np.append(nodo_actual[1], etiquetas)
 
         vecinos, etiquetas, distancias = cercanos(
-            vecinos, etiquetas, consulta, k_vecinos)
+            vecinos, etiquetas, muestra, k_vecinos)
 
         if not recorrido:
             return vecinos, etiquetas, distancias
@@ -226,17 +228,17 @@ def knn(arbol, consulta, k_vecinos, recorrido=False):
 # -----------------------------------------------------------------------------
 
 
-def predecir(arbol, consulta, k_vecinos=5):
+def predecir(arbol, muestra, k_vecinos=5):
     """
     Predice una etiqueta con base en una consulta.
     :param arbol: Diccionario kd-Tree previamente creado
-    :param consulta: np.array con la misma estructura que tienen
+    :param muestra: np.array con la misma estructura que tienen
     las filas matriz que se utilizaron para crear el kd-tree
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
     :return: etiqueta
     """
 
-    etiquetas = knn(arbol, consulta, k_vecinos)[1]
+    etiquetas = knn(arbol, muestra, k_vecinos)[1]
 
     # Diccionario (etiqueta, freacuencia)
     # Esto para tomar el voto por mayoría de los vecinos más cercanos
@@ -253,6 +255,34 @@ def predecir(arbol, consulta, k_vecinos=5):
 
 # -----------------------------------------------------------------------------
 
+
+def clasificar(arbol, muestras, k_vecinos=5):
+
+    """
+    Retorna la precisión del modelo (el árbol) comparando las
+    prediccionesobtenidas sobre las muestras de prueba con sus
+    respectivas etiquetas correctas.
+    :param arbol: Diccionario kd-Tree previamente creado
+    :param muestras: Matriz de muestras para pruebas
+    :param k_vecinos: Cantidad máxima de vecinos más cercanos
+    :return: Preción obtenida
+    """
+
+    # Se extrae la última columna de las muestras, pues corresponde
+    # con las etiquetas correctas
+    etiqs_correctas = muestras[:, muestras.shape[1] - 1]
+    muestras = muestras[:, 0: muestras.shape[1] - 1]
+
+    # Para cada una de las muestras se realiza la respectiva predicción
+    etiqs_predicciones = [
+        predecir(arbol, muestra, k_vecinos) for muestra in muestras
+    ]
+
+    # Función de sklearn
+    return accuracy_score(etiqs_correctas, etiqs_predicciones)
+
+
+# -----------------------------------------------------------------------------
 
 def seleccionar(matriz, atribs_no_usados):
     """
@@ -527,7 +557,7 @@ def preprocesar(matriz, columnas, columnas_c, reordenar=True):
     predicciones de 'VOTO_R2' sin utilizar 'VOTO_R1.
 
     :param matriz: Matriz donde cada fila es una muestra
-    :param columnas:
+    :param columnas: Nombres de las columnas de la matriz
     :param columnas_c: Lista de los nombres de las columnas categoricas a las
     que se les debe aplicar el algortimo ONE HOT ENCODING para convertirlas
     :param reordenar: True si se debe aplicar 'shuffle' a las filas
