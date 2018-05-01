@@ -1,10 +1,10 @@
 
 from pandas import DataFrame
-from sklearn.preprocessing import OneHotEncoder
 from datetime import datetime
 
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
+import matplotlib.pyplot as plt
 
 from tec.ic.ia.pc1.g03 import generar_muestra_pais
 from modelo.normalizacion import normalize, categoric_to_numeric
@@ -26,16 +26,21 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
-walk_data_times = 100
+walk_data_times = 41
 available_activations = ['relu', 'softmax']
 shuffle_buffer_size = 10000
-batch_size = 100
+#
+# entre mas pequeño es el batch, mas lento el entrenamiento pero converge con
+# menos pasadas
+batch_size = 1500
+__predicting = ''
 
 # ------------------------ Funciones públicas ---------------------------------
 
 
-def red(data_list, normalization, prefix, layer_amount=3,
-        units_per_layer=10, activation_f='relu', predicting='r1'):
+def nn(layer_amount=3, units_per_layer=10, activation_f='relu'):
+    global __predicting
+    predicting = __predicting
     #
     # 'relu' por defecto en caso de no existir la ingresada
     if activation_f not in available_activations:
@@ -46,30 +51,11 @@ def red(data_list, normalization, prefix, layer_amount=3,
     if layer_amount < 1:
         layer_amount = 1
     #
-    # Setup de los datos generados por el simulador
-    data = DataFrame(data_list, columns=data_columns)
-    #
-    # Normalización de las columnas densas
-    data = normalize(data, cols_to_norm, normalization)
-    #
-    # Conversión de partidos a números
-    data = categoric_to_numeric(data)
-    data = data.drop('CANTON', axis=1)
-    #
-    # Generar archivos de datos
-    filename = __save_data_file(data, prefix)
-    #
-    # Parsear el archivo con data
-    train_dataset = tf.data.TextLineDataset(filename)
-    train_dataset = train_dataset.map(__parse_csv)
-    train_dataset = train_dataset.shuffle(shuffle_buffer_size)
-    train_dataset = train_dataset.batch(batch_size)
-    #
     # calcular la cantidad de atributos
     input_shape = (21,) if predicting == 'r2_with_r1' else (20,)
     #
     # definir las capas para el modelo
-    nn_layers = []
+    nn_layers = list()
     nn_layers.append(tf.keras.layers.Dense(units_per_layer,
                                            activation=activation_f,
                                            input_shape=input_shape))
@@ -84,40 +70,83 @@ def red(data_list, normalization, prefix, layer_amount=3,
     # Crear el modelo según las capas definidas
     model = tf.keras.Sequential(nn_layers)
 
-    return model, train_dataset
+    return model
 
 
-def entrenar(model, train_dataset):
-
+def nn_entrenar(model, train_dataset):
+    #
+    # definir el tipo de optimizacion y learning rate
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.03)
-
-    train_loss_results = []
-    train_accuracy_results = []
-
+    #
+    # recopilar la precision y perdida por pasada a los datos
+    loss_for_training = []
+    accuracy_for_training = []
+    #
+    # comenzar las pasadas a los datos para entrenar
     for current_walk in range(walk_data_times):
-        epoch_loss_avg = tfe.metrics.Mean()
-        epoch_accuracy = tfe.metrics.Accuracy()
+        current_walk_loss_avg = tfe.metrics.Mean()
+        current_walk_accuracy = tfe.metrics.Accuracy()
 
         for x, y in tfe.Iterator(train_dataset):
-
             grads = __grad(model, x, y)
             optimizer.apply_gradients(
                 zip(grads, model.variables),
                 global_step=tf.train.get_or_create_global_step())
 
-            epoch_loss_avg(__loss(model, x, y))
-            epoch_accuracy(tf.argmax(model(x), axis=1,
-                                     output_type=tf.int32), y)
+            current_walk_loss_avg(__loss(model, x, y))
+            current_walk_accuracy(tf.argmax(model(x), axis=1,
+                                            output_type=tf.int32), y)
+        #
+        # salvar las metricas
+        loss_for_training.append(current_walk_loss_avg.result())
+        accuracy_for_training.append(current_walk_accuracy.result())
 
-        # end epoch
-        train_loss_results.append(epoch_loss_avg.result())
-        train_accuracy_results.append(epoch_accuracy.result())
+        if current_walk % 10 == 0:
+            print("Pasada {:02d}: Pérdida: {:.3f}, "
+                  "Precisión: {:.2%}".format(current_walk,
+                                             current_walk_loss_avg.result(),
+                                             current_walk_accuracy.result()))
 
-        if current_walk % 33 == 0:
-            print("Epoch {:03d}: Loss: {:.3f}, "
-                  "Accuracy: {:.3%}".format(current_walk,
-                                            epoch_loss_avg.result(),
-                                            epoch_accuracy.result()))
+    show_graphics(loss_for_training, accuracy_for_training)
+
+    return model, loss_for_training, accuracy_for_training
+
+
+def nn_validar(model, validation_dataset):
+    pass
+
+
+def nn_normalize(data_list, normalization):
+    #
+    # Setup de los datos generados por el simulador
+    data = DataFrame(data_list, columns=data_columns)
+    #
+    # Normalización de las columnas densas
+    data = normalize(data, cols_to_norm, normalization)
+    #
+    # Conversión de partidos a números
+    data = categoric_to_numeric(data)
+    data = data.drop('CANTON', axis=1)
+
+    return data
+
+
+def nn_build_dataset(data, prefix, predicting='r1'):
+    #
+    # tipo de prediccion para ser leido por parse_csv
+    global __predicting
+    __predicting = predicting
+    #
+    # Generar archivos de datos
+    filename = __save_data_file(data, prefix)
+    #
+    # Parsear el archivo con data
+    dataset = tf.data.TextLineDataset(filename)
+    dataset = dataset.map(__parse_csv)
+    dataset = dataset.shuffle(shuffle_buffer_size)
+    dataset = dataset.batch(batch_size)
+
+    return dataset
 
 
 # ---------------------- Funciones del modelo ---------------------------------
@@ -135,16 +164,39 @@ def __grad(model, inputs, targets):
 
 
 def __parse_csv(line):
+    global __predicting
     example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
                         [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
-                        [0.], [0.], [0], [0]]
+                        [0.], [0.], [0.], [0]]
     parsed_line = tf.decode_csv(line, example_defaults)
-    features = tf.reshape(parsed_line[:-2], shape=(20,))
-    label = tf.reshape(parsed_line[-2], shape=())
+    if __predicting == 'r1':
+        features = tf.reshape(parsed_line[:-2], shape=(20,))
+        label = tf.reshape(parsed_line[-2], shape=())
+    elif __predicting == 'r2':
+        features = tf.reshape(parsed_line[:-2], shape=(20,))
+        label = tf.reshape(parsed_line[-1], shape=())
+    else:
+        features = tf.reshape(parsed_line[:-1], shape=(21,))
+        label = tf.reshape(parsed_line[-1], shape=())
     return features, label
 
 
 # ---------------------- Funciones auxiliares ---------------------------------
+
+
+def show_graphics(loss_results, accuracy_results):
+
+    fig, axes = plt.subplots(2, sharex=True, figsize=(12, 8))
+    fig.suptitle('Métricas del entrenamiento')
+
+    axes[0].set_ylabel("Pérdida", fontsize=14)
+    axes[0].plot(loss_results)
+
+    axes[1].set_ylabel("Precisión", fontsize=14)
+    axes[1].set_xlabel("Pasadas", fontsize=14)
+    axes[1].plot(accuracy_results)
+
+    plt.show()
 
 
 def __save_data_file(df, prefix):
@@ -159,9 +211,13 @@ def __save_data_file(df, prefix):
 
 
 def main():
-    t_data = generar_muestra_pais(500)
-    modelo, training_dataset = red(t_data, 'os', 'training', 4, 5)
-    entrenar(modelo, training_dataset)
+    data = generar_muestra_pais(3000)
+    df_data = nn_normalize(data, 'ss')
+    #
+    # en este momento debería hacerse la cross validation a DATA
+    dataset = nn_build_dataset(df_data, 'training', predicting='r2_with_r1')
+    modelo = nn(3, 5, 'relu')
+    nn_entrenar(modelo, dataset)
 
 
 if __name__ == '__main__':

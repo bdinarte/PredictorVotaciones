@@ -2,6 +2,7 @@ from math import log
 from texttable import Texttable
 
 """
+
 # Pseudocodigo del arbol de decision  
 
 def decision_tree_learning(examples, attrs, parent_examples=()):
@@ -21,11 +22,91 @@ def decision_tree_learning(examples, attrs, parent_examples=()):
         return tree
 """
 
+def decision_tree_learning(examples, attrs, parent_examples=()):
+    """
+    Construccion del arbol de decision, que se entrena a partir de un conjunto de muestras observadas
+    :param examples:
+    :param attrs:
+    :param parent_examples:
+    :return:
+    """
+    if len(examples) == 0:
+        return plurality_value(parent_examples)
+    elif all_same_class(examples):
+        return Nodo(examples[0]['VOTO'], True)
+    elif len(attrs) == 0:
+        return plurality_value(examples)
+    else:
+        A = choose_attribute(examples)
+        tree = Arboln()
+        attrnames = get_attrnames(A, examples)
+        tree = Arboln(A, dataset.attrnames[A], plurality_value(examples))
+        for (v_k, exs) in split_by(A, examples):
+            subtree = decision_tree_learning(
+                exs, remove_all(A, attrs), examples)
+            tree.insertar(v_k, subtree)
+        return tree
+
+
+def plurality_value(atributo_columna , examples):
+    """
+    Retorna el valor plural o mas comun de un conjunto de datos, es decir, el que mas
+    aparicios tiene en el set ingresado
+
+    Example from StackOverflow:
+    They would have said the majority class if there were only two classes.
+    Plurality is just the generalization of majority to more than 2 classes.
+    It just means take the most frequent class in that leaf and return that as your prediction.
+    For example, if you are classifying the colors of balls, and there are 3 blue balls, 2 red balls,
+    and 2 white balls in a leaf, return blue as your prediction.
+    :param atributo_columna: atributo sobre el que se determinara el valor de mayor pluralidad
+    :param examples: conjunto de muestras observadas
+    :return: etiqueta del atributo con mayor pluralidad
+    """
+
+    plural_value = None
+    return plural_value
+
+def get_attrnames(atributo_columna, examples):
+    """
+    Funcion utilizada para obtener el conjunto de valores posibles
+    qiue puede obtener un determinado atributo según el conjunto de
+    datos observados con que se esta entrenando el modelo
+    :param atributo_columna: Es el atributo sobre el cual se tomara la columna respectiva
+    y se determinaran los posibles valores que pueden obtener las muestras
+    :param examples: es el conjunto de muestras observadas
+    :return: lista de atributos que se le pueden asignar a la columna atributo_columna
+    """
+
+    list_attrnames = []
+    index_attr = examples[0].index(atributo_columna)
+
+    for i in range(1, len(examples)):
+        if list_attrnames.count(examples[i][index_attr]) == 0:
+            list_attrnames.append(examples[i][index_attr])
+
+    return list_attrnames
+
+
+
+def remove_all(atributo_columna, attrs):
+    """
+    Elimina de la lista de atributos, todas las apariciones de un atributo en especifico
+    :param atributo_columna: atributo que se eliminara de la lista attrs
+    :param attrs: lista de atributos (header) en el que se encuentran todas las etiquetas
+    :return: lista de atributos (header) sin el atributo_columna que se esta ingresando
+    """
+    apariciones = attrs.count(atributo_columna)
+    for i in range(apariciones):
+        attrs.remove(atributo_columna)
+    return attrs
+
 
 # ---------------------------------------------------------------------
 
 class Nodo:
-    def __init__(self, valor):
+    def __init__(self, valor, es_hoja=False):
+        self.es_hoja = es_hoja
         self.info = valor
         self.hijos = []
 
@@ -384,6 +465,41 @@ def porporcion_positivos(muestra):
 
 
 # ---------------------------------------------------------------------
+
+def choose_attribute(examples):
+    """
+    Funcion utilizada para determinar el atributo que tiene mejor ganancia de informacion
+    a partir de un conjunto de muestras de ejemplo que son pasadas por parametro
+    :param examples: conjunto de muestras sobre las que se determina el atributo con
+    mayor ganancia de informacion
+    :return: etiqueta del atributo con mayor ganancia de informacion
+    """
+
+    dataSet = DataSet(examples)
+    featuresInfoGain = {}
+
+    for column in range(0, dataSet.get_data()[0].__len__() - 1):
+        feature = Feature(column, dataSet.get_data())
+        dataSets = [DataSet for i in range(feature.get_values().__len__())]
+
+        i = 0
+        for featureValue in feature.get_values():
+            dataSets[i] = create_data_set(featureValue, column, dataSet.get_data())
+            i += 1
+
+        summation = 0
+        for i in range(0, dataSets.__len__()):
+            summation += (((dataSets[i].get_data()).__len__() - 1) /
+                          (dataSet.get_data().__len__() - 1)) * dataSets[i].get_entropy()
+        featuresInfoGain[feature] = dataSet.get_entropy() - summation
+
+    # print(generate_info_gain_table(featuresInfoGain))
+    # print("\nBest feature to split on is: ", max(featuresInfoGain, key=featuresInfoGain.get), "\n")
+
+    return max(featuresInfoGain, key=featuresInfoGain.get)
+
+
+# ---------------------------------------------------------------------
 # Ejemplos y pruebas
 # ---------------------------------------------------------------------
 
@@ -420,30 +536,5 @@ muestra_prueba = [
     ['HEREDIA', 'SI', '30', 'NO', 'PAC'],
     ['CARTAGO', 'NO', '18', 'SI', 'RES'],
     ['HEREDIA', 'NO', '20', 'NO', 'PAC'],
+    ['PUNTARENAS', 'NO', '20', 'NO', 'PAC']
 ]
-
-datas = {'Random': muestra_prueba}
-
-for key in datas:
-    print(key, 'DATASET:')
-    dataSet = DataSet(datas[key])
-    print(dataSet)
-    featuresInfoGain = {}
-
-    for column in range(0, dataSet.get_data()[0].__len__() - 1):
-        feature = Feature(column, dataSet.get_data())
-        dataSets = [DataSet for i in range(feature.get_values().__len__())]
-
-        i = 0
-        for featureValue in feature.get_values():
-            dataSets[i] = create_data_set(featureValue, column, dataSet.get_data())
-            i += 1
-
-        summation = 0
-        for i in range(0, dataSets.__len__()):
-            summation += (((dataSets[i].get_data()).__len__() - 1) /
-                          (dataSet.get_data().__len__() - 1)) * dataSets[i].get_entropy()
-        featuresInfoGain[feature] = dataSet.get_entropy() - summation
-
-    print(generate_info_gain_table(featuresInfoGain))
-    print("\nBest feature to split on is: ", max(featuresInfoGain, key=featuresInfoGain.get), "\n")
