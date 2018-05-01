@@ -2,6 +2,7 @@ from math import log
 from texttable import Texttable
 
 """
+
 # Pseudocodigo del arbol de decision  
 
 def decision_tree_learning(examples, attrs, parent_examples=()):
@@ -21,11 +22,64 @@ def decision_tree_learning(examples, attrs, parent_examples=()):
         return tree
 """
 
+def decision_tree_learning(examples, attrs, parent_examples=()):
+    if len(examples) == 0:
+        return plurality_value(parent_examples)
+    elif all_same_class(examples):
+        return Nodo(examples[0]['VOTO'], True)
+    elif len(attrs) == 0:
+        return plurality_value(examples)
+    else:
+        A = choose_attribute(examples)
+        tree = Arboln()
+        attrnames = get_attrnames(A, examples)
+        tree = Arboln(A, dataset.attrnames[A], plurality_value(examples))
+        for (v_k, exs) in split_by(A, examples):
+            subtree = decision_tree_learning(
+                exs, remove_all(A, attrs), examples)
+            tree.insertar(v_k, subtree)
+        return tree
+
+
+def plurality_value(atributo_columna , examples):
+    """
+    They would have said the majority class if there were only two classes.
+    Plurality is just the generalization of majority to more than 2 classes.
+    It just means take the most frequent class in that leaf and return that as your prediction.
+    For example, if you are classifying the colors of balls, and there are 3 blue balls, 2 red balls,
+    and 2 white balls in a leaf, return blue as your prediction.
+    :param atributo_columna:
+    :param examples:
+    :return:
+    """
+
+    plural_value = None
+    return plural_value
+
+def get_attrnames(atributo_columna, examples):
+    list_attrnames = []
+    index_attr = examples[0].index(atributo_columna)
+
+    for i in range(1, len(examples)):
+        if list_attrnames.count(examples[i][index_attr]) == 0:
+            list_attrnames.append(examples[i][index_attr])
+
+    return list_attrnames
+
+
+
+def remove_all(atributo_columna, attrs):
+    apariciones = attrs.count(atributo_columna)
+    for i in range(apariciones):
+        attrs.remove(atributo_columna)
+    return attrs
+
 
 # ---------------------------------------------------------------------
 
 class Nodo:
-    def __init__(self, valor):
+    def __init__(self, valor, es_hoja=False):
+        self.es_hoja = es_hoja
         self.info = valor
         self.hijos = []
 
@@ -420,14 +474,13 @@ muestra_prueba = [
     ['HEREDIA', 'SI', '30', 'NO', 'PAC'],
     ['CARTAGO', 'NO', '18', 'SI', 'RES'],
     ['HEREDIA', 'NO', '20', 'NO', 'PAC'],
+    ['PUNTARENAS', 'NO', '20', 'NO', 'PAC']
 ]
 
-datas = {'Random': muestra_prueba}
 
-for key in datas:
-    print(key, 'DATASET:')
-    dataSet = DataSet(datas[key])
-    print(dataSet)
+def choose_attribute(examples):
+
+    dataSet = DataSet(examples)
     featuresInfoGain = {}
 
     for column in range(0, dataSet.get_data()[0].__len__() - 1):
@@ -445,5 +498,7 @@ for key in datas:
                           (dataSet.get_data().__len__() - 1)) * dataSets[i].get_entropy()
         featuresInfoGain[feature] = dataSet.get_entropy() - summation
 
-    print(generate_info_gain_table(featuresInfoGain))
-    print("\nBest feature to split on is: ", max(featuresInfoGain, key=featuresInfoGain.get), "\n")
+    # print(generate_info_gain_table(featuresInfoGain))
+    # print("\nBest feature to split on is: ", max(featuresInfoGain, key=featuresInfoGain.get), "\n")
+
+    return max(featuresInfoGain, key=featuresInfoGain.get)
