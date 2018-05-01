@@ -42,24 +42,30 @@ def __overmax_scaling(df):
     return df / df.max()
 
 
+def partidos_r1_to_id():
+    return {'ACCESIBILIDAD SIN EXCLUSION': 0,
+            'ACCION CIUDADANA': 1,
+            'ALIANZA DEMOCRATA CRISTIANA': 2,
+            'DE LOS TRABAJADORES': 3,
+            'FRENTE AMPLIO': 4,
+            'INTEGRACION NACIONAL': 5,
+            'LIBERACION NACIONAL': 6,
+            'MOVIMIENTO LIBERTARIO': 7,
+            'NUEVA GENERACION': 8,
+            'RENOVACION COSTARRICENSE': 9,
+            'REPUBLICANO SOCIAL CRISTIANO': 10,
+            'RESTAURACION NACIONAL': 11,
+            'UNIDAD SOCIAL CRISTIANA': 12,
+            'NULO': 13, 'BLANCO': 14}
+
+
+def partidos_r2_to_id():
+    return {'RESTAURACION NACIONAL': 0,
+            'ACCION CIUDADANA': 1,
+            'NULO': 2, 'BLANCO': 3}
+
+
 def categoric_to_numeric(data):
-    data['VOTO_R1'] = data['VOTO_R2'].map({
-        'ACCESIBILIDAD SIN EXCLUSION': 0,
-        'ACCION CIUDADANA': 1,
-        'ALIANZA DEMOCRATA CRISTIANA': 2,
-        'DE LOS TRABAJADORES': 3,
-        'FRENTE AMPLIO': 4,
-        'INTEGRACION NACIONAL': 5,
-        'LIBERACION NACIONAL': 6,
-        'MOVIMIENTO LIBERTARIO': 7,
-        'NUEVA GENERACION': 8,
-        'RENOVACION COSTARRICENSE': 9,
-        'REPUBLICANO SOCIAL CRISTIANO': 10,
-        'RESTAURACION NACIONAL': 11,
-        'UNIDAD SOCIAL CRISTIANA': 12,
-        'NULO': 13, 'BLANCO': 14})
-    data['VOTO_R2'] = data['VOTO_R2'].map({
-        'RESTAURACION NACIONAL': 0,
-        'ACCION CIUDADANA': 1,
-        'NULO': 2, 'BLANCO': 3})
+    data['VOTO_R1'] = data['VOTO_R2'].map(partidos_r1_to_id())
+    data['VOTO_R2'] = data['VOTO_R2'].map(partidos_r2_to_id())
     return data

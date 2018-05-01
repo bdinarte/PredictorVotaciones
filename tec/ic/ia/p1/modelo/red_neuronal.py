@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 from tec.ic.ia.pc1.g03 import generar_muestra_pais
 from modelo.normalizacion import normalize, categoric_to_numeric
+from modelo.normalizacion import partidos_r1_to_id, partidos_r2_to_id
 from modelo.manejo_archivos import guardar_como_csv
 
 tf.enable_eager_execution()
@@ -38,9 +39,11 @@ __predicting = ''
 # ------------------------ Funciones públicas ---------------------------------
 
 
-def nn(layer_amount=3, units_per_layer=10, activation_f='relu'):
+def nn(layer_amount=3, units_per_layer=10, activation_f='relu',
+       predicting='r1'):
+
     global __predicting
-    predicting = __predicting
+    __predicting = predicting
     #
     # 'relu' por defecto en caso de no existir la ingresada
     if activation_f not in available_activations:
@@ -73,7 +76,9 @@ def nn(layer_amount=3, units_per_layer=10, activation_f='relu'):
     return model
 
 
-def nn_entrenar(model, train_dataset):
+def nn_entrenar(model, train_data, prefix):
+
+    train_dataset = __nn_build_dataset(train_data, prefix)
     #
     # definir el tipo de optimizacion y learning rate
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.03)
@@ -107,12 +112,15 @@ def nn_entrenar(model, train_dataset):
                                              current_walk_loss_avg.result(),
                                              current_walk_accuracy.result()))
 
-    show_graphics(loss_for_training, accuracy_for_training)
+    __show_graphics(loss_for_training, accuracy_for_training)
 
     return model, loss_for_training, accuracy_for_training
 
 
-def nn_validar(model, validation_dataset):
+def nn_validar(model, validation_data, prefix):
+
+    validation_dataset = __nn_build_dataset(validation_data, prefix)
+
     test_accuracy = tfe.metrics.Accuracy()
 
     for x, y in tfe.Iterator(validation_dataset):
@@ -121,6 +129,29 @@ def nn_validar(model, validation_dataset):
     #
     # TODO: modificar el tipo de dato del retorno de precision
     return 'Test set accuracy: {:.3%}'.format(test_accuracy.result())
+
+
+def nn_predict(model, data_list):
+
+    data_list = nn_normalize(data_list, 'os')
+    data_list = data_list.values.tolist()
+
+    if __predicting is 'r1':
+        num_to_label = {val: key for key, val in partidos_r1_to_id().items()}
+        data_to_predict = [row[:-2] for row in data_list]
+    else:
+        num_to_label = {val: key for key, val in partidos_r2_to_id().items()}
+        if __predicting is not 'r2':
+            data_to_predict = [row[:-1] for row in data_list]
+
+    predict_dataset = tf.convert_to_tensor(data_to_predict)
+
+    predictions = model(predict_dataset)
+
+    for i, logits in enumerate(predictions):
+        label_id = tf.argmax(logits).numpy()
+        label = num_to_label[label_id]
+        print("Example {} prediction: {}".format(i, label))
 
 
 def nn_normalize(data_list, normalization):
@@ -138,11 +169,10 @@ def nn_normalize(data_list, normalization):
     return data
 
 
-def nn_build_dataset(data, prefix, predicting='r1'):
-    #
-    # tipo de prediccion para ser leido por parse_csv
-    global __predicting
-    __predicting = predicting
+# ---------------------- Funciones del modelo ---------------------------------
+
+
+def __nn_build_dataset(data, prefix):
     #
     # Generar archivos de datos
     filename = __save_data_file(data, prefix)
@@ -154,9 +184,6 @@ def nn_build_dataset(data, prefix, predicting='r1'):
     dataset = dataset.batch(batch_size)
 
     return dataset
-
-
-# ---------------------- Funciones del modelo ---------------------------------
 
 
 def __loss(model, x, y):
@@ -191,7 +218,7 @@ def __parse_csv(line):
 # ---------------------- Funciones auxiliares ---------------------------------
 
 
-def show_graphics(loss_results, accuracy_results):
+def __show_graphics(loss_results, accuracy_results):
 
     fig, axes = plt.subplots(2, sharex=True, figsize=(12, 8))
     fig.suptitle('Métricas del entrenamiento')
@@ -223,13 +250,16 @@ def main():
     t_data = df_data.sample(frac=0.8)
     v_data = df_data.drop(t_data.index)
     #
-    # en este momento debería hacerse la cross validation a DATA
-    t_data = nn_build_dataset(t_data, 'training', predicting='r2_with_r1')
-    modelo = nn(3, 5, 'relu')
-    modelo, _, _ = nn_entrenar(modelo, t_data)
+    # instanciar el modelo
+    modelo = nn(3, 5, 'relu', predicting='r2_with_r1')
+    #
+    # entrenar el modelo
+    modelo, _, _ = nn_entrenar(modelo, t_data, 'training')
 
-    v_data = nn_build_dataset(v_data, 'validation', predicting='r2_with_r1')
-    print(str(nn_validar(modelo, v_data)))
+    print(str(nn_validar(modelo, v_data, 'validation')))
+
+    data = generar_muestra_pais(100)
+    nn_predict(modelo, data)
 
 
 if __name__ == '__main__':
