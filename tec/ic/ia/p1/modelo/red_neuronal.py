@@ -3,12 +3,16 @@ from pandas import DataFrame
 
 import numpy as np
 import tensorflow as tf
+import tensorflow.contrib.eager as tfe
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 
 from tec.ic.ia.pc1.g03 import generar_muestra_pais
 from modelo.normalizacion import normalize, categoric_to_numeric
+from modelo.manejo_archivos import guardar_como_csv
+
+tf.enable_eager_execution()
 
 data_columns = ['CANTON', 'EDAD', 'ES_URBANO', 'SEXO', 'ES_DEPENDIENTE',
                 'ESTADO_VIVIENDA', 'E.HACINAMIENTO', 'ALFABETIZACION',
@@ -24,46 +28,76 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
 
 
-def red(data, normalization):
+def red(data_list, v_data, normalization):
+    data = DataFrame(data_list, columns=data_columns)
+    data = normalize(data, cols_to_norm, normalization)
+    data = categoric_to_numeric(data)
+    data = data.drop('CANTON', axis=1)
+    guardar_como_csv(data, 'training.data')
 
-    data, features, labels = setup_data(data, normalization)
+    train_dataset = tf.data.TextLineDataset('training.data')
+    train_dataset = train_dataset.map(parse_csv)
+    train_dataset = train_dataset.shuffle(buffer_size=1000)
+    train_dataset = train_dataset.batch(32)
 
-    train_features, test_features, train_labels, test_labels = train_test_split(features, labels, test_size=0.2, random_state=0)
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(10, activation="relu", input_shape=(20,)),
+        tf.keras.layers.Dense(10, activation="relu"),
+        tf.keras.layers.Dense(15)
+    ])
 
-    #
-    # Ajustando el modelo
-    learning_rate = 0.001
-    num_epochs = 1500
-    display_step = 1
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
 
-    features = tf.placeholder(tf.float32, [None, train_features.shape[1]])
-    labels = tf.placeholder(tf.float32, [None, train_labels.shape[1]])
+    train_loss_results = []
+    train_accuracy_results = []
 
-    weights = tf.Variable(tf.zeros([train_features.shape[1],
-                                    train_labels.shape[1]]))
-    bias = tf.Variable(tf.zeros([train_labels.shape[1]]))
+    num_epochs = 500
 
-    labels_ = tf.nn.softmax(tf.add(tf.matmul(features, weights), bias))
-
-    cost = tf.nn.softmax_cross_entropy_with_logits(labels=labels,
-                                                   logits=labels_)
-
-    optimizer = tf.train.GradientDescentOptimizer(
-        learning_rate=learning_rate).minimize(cost)
-
-    tf.Session().run(tf.global_variables_initializer())
     for epoch in range(num_epochs):
-        cost_per_epoch = 0
-        _, curr_cost = tf.Session().run([optimizer, cost],
-                                        feed_dict={features: train_features,
-                                                   labels: train_labels})
-        cost_per_epoch += curr_cost
+        epoch_loss_avg = tfe.metrics.Mean()
+        epoch_accuracy = tfe.metrics.Accuracy()
 
-    correct_prediction = tf.equal(tf.argmax(labels_, 1), tf.argmax(labels, 1))
+        for x, y in tfe.Iterator(train_dataset):
 
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    print("Accuracy:", accuracy.eval({features: test_features,
-                                      labels: test_labels}))
+            grads = grad(model, x, y)
+            optimizer.apply_gradients(
+                zip(grads, model.variables),
+                global_step=tf.train.get_or_create_global_step())
+
+            epoch_loss_avg(loss(model, x, y))
+            epoch_accuracy(tf.argmax(model(x), axis=1,
+                                     output_type=tf.int32), y)
+
+        # end epoch
+        train_loss_results.append(epoch_loss_avg.result())
+        train_accuracy_results.append(epoch_accuracy.result())
+
+        if epoch % 50 == 0:
+            print("Epoch {:03d}: Loss: {:.3f}, "
+                  "Accuracy: {:.3%}".format(epoch,
+                                            epoch_loss_avg.result(),
+                                            epoch_accuracy.result()))
+
+
+def loss(model, x, y):
+    y_ = model(x)
+    return tf.losses.sparse_softmax_cross_entropy(labels=y, logits=y_)
+
+
+def grad(model, inputs, targets):
+    with tfe.GradientTape() as tape:
+        loss_value = loss(model, inputs, targets)
+    return tape.gradient(loss_value, model.variables)
+
+
+def parse_csv(line):
+    example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                        [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                        [0.], [0.], [0], [0]]
+    parsed_line = tf.decode_csv(line, example_defaults)
+    features = tf.reshape(parsed_line[:-2], shape=(20,))
+    label = tf.reshape(parsed_line[-2], shape=())
+    return features, label
 
 
 def setup_data(data_list, normalization):
@@ -86,7 +120,6 @@ def setup_data(data_list, normalization):
 
     labels = data.loc[:, ['VOTO_R1']]
     features, labels = codificar_one_hot(features, labels)
-
     return data, features, labels
 
 
@@ -102,9 +135,9 @@ def codificar_one_hot(features, labels):
 
 
 def main():
-
-    data = generar_muestra_pais(100)
-    red(data, 'os')
+    t_data = generar_muestra_pais(500)
+    v_data = generar_muestra_pais(20)
+    red(t_data, v_data, 'os')
 
 
 if __name__ == '__main__':

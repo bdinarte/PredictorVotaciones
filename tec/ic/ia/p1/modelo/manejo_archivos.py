@@ -49,7 +49,7 @@ def guardar_como_csv(df, nombre_archivo):
     """
 
     try:
-        df.to_csv(nombre_archivo)
+        df.to_csv(nombre_archivo, index=False, header=False)
 
     except Exception as e:
         print("Error al guardar el archivo: " + nombre_archivo)
