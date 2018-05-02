@@ -30,20 +30,20 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
-walk_data_times = 41
-available_activations = ['relu', 'softmax']
+walk_data_times = 71
+available_activations = ['relu', 'softmax', 'softplus']
 shuffle_buffer_size = 10000
 #
 # entre mas pequeño es el batch, mas lento el entrenamiento pero converge con
 # menos pasadas
-batch_size = 1500
+batch_size = 1000
 __predicting = ''
 
 # ------------------------ Funciones públicas ---------------------------------
 
 
 def nn(layer_amount=3, units_per_layer=10, activation_f='relu',
-       predicting='r1'):
+       activation_on_output=True, predicting='r1'):
 
     global __predicting
     __predicting = predicting
@@ -70,8 +70,14 @@ def nn(layer_amount=3, units_per_layer=10, activation_f='relu',
                                                activation=activation_f))
     #
     # modificar la cantidad de unidades de salida segun las etiquetas
-    output_amount = 4 if predicting == 'r2_with_r1' else 15
-    nn_layers.append(tf.keras.layers.Dense(output_amount))
+    output_amount = 4 if predicting != 'r1' else 15
+    #
+    # para la última capa es posible no definir una función de activación
+    if activation_on_output:
+        nn_layers.append(tf.keras.layers.Dense(output_amount,
+                                               activation=activation_f))
+    else:
+        nn_layers.append(tf.keras.layers.Dense(output_amount))
     #
     # Crear el modelo según las capas definidas
     model = tf.keras.Sequential(nn_layers)
@@ -134,27 +140,34 @@ def nn_validar(model, validation_data, prefix):
     return 'Test set accuracy: {:.3%}'.format(test_accuracy.result())
 
 
-def nn_predict(model, data_list):
+def nn_predict(model, df_data):
 
-    data_list = nn_normalize(data_list, 'os')
-    data_list = data_list.values.tolist()
+    data_list = df_data.values.tolist()
 
-    if __predicting is 'r1':
+    if __predicting == 'r1':
         num_to_label = {val: key for key, val in partidos_r1_to_id().items()}
         data_to_predict = [row[:-2] for row in data_list]
     else:
         num_to_label = {val: key for key, val in partidos_r2_to_id().items()}
-        if __predicting is not 'r2':
+        if __predicting is 'r2_with_r1':
             data_to_predict = [row[:-1] for row in data_list]
+        else:
+            data_to_predict = [row[:-2] for row in data_list]
 
     predict_dataset = tf.convert_to_tensor(data_to_predict)
 
     predictions = model(predict_dataset)
 
+    _predictions = list()
     for i, logits in enumerate(predictions):
         label_id = tf.argmax(logits).numpy()
         label = num_to_label[label_id]
-        print("Example {} prediction: {}".format(i, label))
+        _predictions.append('{}'.format(label))
+
+    return Counter(_predictions)
+
+
+from collections import Counter
 
 
 def nn_normalize(data_list, normalization):
@@ -202,9 +215,15 @@ def __grad(model, inputs, targets):
 
 def __parse_csv(line):
     global __predicting
-    example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
-                        [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
-                        [0.], [0.], [0.], [0]]
+    if __predicting == 'r1':
+        example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                            [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                            [0.], [0.], [0.], [0.], [0], [0]]
+    else:
+        example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                            [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                            [0.], [0.], [0.], [0.], [0.], [0]]
+
     parsed_line = tf.decode_csv(line, example_defaults)
     if __predicting == 'r1':
         features = tf.reshape(parsed_line[:-2], shape=(20,))
@@ -250,19 +269,26 @@ def __save_data_file(df, prefix):
 def main():
     data = generar_muestra_pais(1000)
     df_data = nn_normalize(data, 'os')
+    #
+    # separar 80% para entrenar y validar
     t_data = df_data.sample(frac=0.8)
-    v_data = df_data.drop(t_data.index)
+    # el otro 20% del inicial para set holdout
+    data_to_predict = df_data.drop(t_data.index)
+    #
+    # separar 25% del conjunto de entrenamiento para validar
+    v_data = t_data.sample(frac=0.25)
+    t_data = t_data.drop(v_data.index)
     #
     # instanciar el modelo
-    modelo = nn(3, 5, 'relu', predicting='r2_with_r1')
+    modelo = nn(layer_amount=5, units_per_layer=5, activation_f='relu',
+                activation_on_output=False, predicting='r2_with_r1')
     #
     # entrenar el modelo
     modelo, _, _ = nn_entrenar(modelo, t_data, 'training')
 
     print(str(nn_validar(modelo, v_data, 'validation')))
 
-    data = generar_muestra_pais(100)
-    nn_predict(modelo, data)
+    print(nn_predict(modelo, data_to_predict))
 
 
 if __name__ == '__main__':
