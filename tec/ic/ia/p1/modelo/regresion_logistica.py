@@ -1,17 +1,23 @@
 
-import tensorflow as tf
+import os
+import sys
+sys.path.append('../..')
 
 from pandas import DataFrame
 from datetime import datetime
 
-from modelo.manejo_archivos import guardar_como_csv
-from modelo.normalizacion import normalize, categoric_to_numeric
-from tec.ic.ia.pc1.g03 import *
+import tensorflow as tf
+import matplotlib.pyplot as plt
 
-_CSV_COLUMN_DEFAULTS = [[''], [0], [0], [0], [0], [0], [0], [0], [0], [0],
-                        [0], [0], [0], [0], [0], [0], [0], [0], [0], [0],
-                        [0], [''], ['']]
-_CSV_COLUMNS = ['CANTON', 'EDAD', 'ES_URBANO', 'SEXO', 'ES_DEPENDIENTE',
+from tec.ic.ia.pc1.g03 import generar_muestra_pais
+from p1.modelo.normalizacion import normalize, categoric_to_numeric
+from p1.modelo.normalizacion import partidos_r1_to_id, partidos_r2_to_id
+from p1.modelo.manejo_archivos import guardar_como_csv
+
+
+# --------------------------- Constantes --------------------------------------
+
+data_columns = ['CANTON', 'EDAD', 'ES_URBANO', 'SEXO', 'ES_DEPENDIENTE',
                 'ESTADO_VIVIENDA', 'E.HACINAMIENTO', 'ALFABETIZACION',
                 'ESCOLARIDAD_PROMEDIO', 'ASISTENCIA_EDUCACION',
                 'FUERZA_DE_TRABAJO', 'SEGURO', 'N.EXTRANJERO',
@@ -23,210 +29,216 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
-_SHUFFLE_BUFFER = 1000
+walk_data_times = 101
+shuffle_buffer_size = 1000
+#
+# entre mas pequeño es el batch, mas lento el entrenamiento pero converge con
+# menos pasadas
+batch_size = 1500
+__predicting = ''
+__learning_rate = 0.03
+
+# ------------------------ Funciones públicas ---------------------------------
 
 
-# ---------------------- Funciones 'públicas' ---------------------------------
-
-
-def clasificador_regresion_logistica(learning_rate=0.1, regularization='None'):
-    dir_name = 'regresion_log_' + str(datetime.now().time())
-    dir_name = dir_name.replace(':', '_').replace('.', '_')
-    return __build_estimator(dir_name, learning_rate, regularization)
-
-
-def entrenar_regr_log(classifier, train_data_list):
-    data = DataFrame(train_data_list, columns=_CSV_COLUMNS)
-    data = categoric_to_numeric(data)
-    data = normalize(data, cols_to_norm, 'os')
-    train_file = __save_data_file(data, 'train_data_')
-    classifier.train(input_fn=lambda: __train_input_fn(train_file))
-    return classifier
-
-
-def validar_regr_log(classifier, test_data_list):
-    data = DataFrame(test_data_list, columns=_CSV_COLUMNS)
-    data = categoric_to_numeric(data)
-    data = normalize(data, cols_to_norm, 'os')
-    validation_file = __save_data_file(data, 'validat_data_')
-    results = classifier.evaluate(input_fn=lambda: __eval_input_fn(
-        validation_file))
-    return results
-
-
-# ---------------------- Funciones de la regresion ----------------------------
-
-
-def __build_model_columns():
-
-    tf_numeric = tf.feature_column.numeric_column
-    edad = tf_numeric('EDAD')
-    escolaridad = tf_numeric('ESCOLARIDAD_PROMEDIO')
-    poblacion = tf_numeric('POBLACION_TOTAL')
-    superficie = tf_numeric('SUPERFICIE')
-    densidad = tf_numeric('DENSIDAD_POBLACION')
-    viviendas_ocupadas = tf_numeric('VIVIENDAS_INDIVIDUALES_OCUPADAS')
-    ocupantes = tf_numeric('PROMEDIO_DE_OCUPANTES')
-    p_jefat_fem = tf_numeric('P.JEFAT.FEMENINA')
-    p_jefat_com = tf_numeric('P.JEFAT.COMPARTIDA')
-
-    # columnas categoricas convertidas a binario
-    urbano = tf_numeric(_CSV_COLUMNS[2])
-    genero = tf_numeric(_CSV_COLUMNS[3])
-    est_vivienda = tf_numeric(_CSV_COLUMNS[5])
-    hacinamiento = tf_numeric(_CSV_COLUMNS[6])
-    alfabetismo = tf_numeric(_CSV_COLUMNS[7])
-    educacion = tf_numeric(_CSV_COLUMNS[9])
-    trabajo = tf_numeric(_CSV_COLUMNS[10])
-    seguro = tf_numeric(_CSV_COLUMNS[11])
-    extranjero = tf_numeric(_CSV_COLUMNS[12])
-    discapacidad = tf_numeric(_CSV_COLUMNS[13])
-
-    # Columnas de valores categorizados desconocidos
-    canton = tf.feature_column.categorical_column_with_hash_bucket(
-        'CANTON', hash_bucket_size=1000)
-
-    # Agrupando columnas segun su tipo de dato
-    cols = [edad, escolaridad, poblacion, superficie, densidad,
-                       viviendas_ocupadas, ocupantes, p_jefat_fem,
-                       p_jefat_com, urbano, genero, est_vivienda, hacinamiento,
-                       alfabetismo, educacion, trabajo, seguro, extranjero,
-                       discapacidad, canton]
-
-    # TODO: quizas definir crossed_column entre canton y sus indicadores
-
-    return cols
-
-'''
-def __build_model_columns():
-
-    tf_numeric = tf.feature_column.numeric_column
-    # Columnas de valores numericos
-    edad = tf_numeric('EDAD')
-    escolaridad = tf_numeric('ESCOLARIDAD_PROMEDIO')
-    poblacion = tf_numeric('POBLACION_TOTAL')
-    superficie = tf_numeric('SUPERFICIE')
-    densidad = tf_numeric('DENSIDAD_POBLACION')
-    viviendas_ocupadas = tf_numeric('VIVIENDAS_INDIVIDUALES_OCUPADAS')
-    ocupantes = tf_numeric('PROMEDIO_DE_OCUPANTES')
-    p_jefat_fem = tf_numeric('P.JEFAT.FEMENINA')
-    p_jefat_com = tf_numeric('P.JEFAT.COMPARTIDA')
-
-    tf_categoric = tf.feature_column.categorical_column_with_vocabulary_list
-    # Columnas de valores categorizables
-    urbano = tf_categoric(_CSV_COLUMNS[2], ['NO URBANO', 'URBANO'])
-    genero = tf_categoric(_CSV_COLUMNS[3], ['M', 'F'])
-    est_vivienda = tf_categoric(_CSV_COLUMNS[5], ['V. MAL ESTADO',
-                                                  'V. BUEN ESTADO'])
-    hacinamiento = tf_categoric(_CSV_COLUMNS[6], ['V. NO HACINADA',
-                                                  'V. HACINADA'])
-    alfabetismo = tf_categoric(_CSV_COLUMNS[7], ['NO ALFABETIZADO',
-                                                 'ALFABETIZADO'])
-    educacion = tf_categoric(_CSV_COLUMNS[9], ['EDUCACION REGULAR INACTIVA',
-                                               'EN EDUCACION REGULAR'])
-    trabajo = tf_categoric(_CSV_COLUMNS[10], ['DESEMPLEADO', 'EMPLEADO'])
-    seguro = tf_categoric(_CSV_COLUMNS[11], ['NO ASEGURADO', 'ASEGURADO'])
-    extranjero = tf_categoric(_CSV_COLUMNS[12], ['NO EXTRANJERO',
-                                                 'EXTRANJERO'])
-    discapacidad = tf_categoric(_CSV_COLUMNS[13], ['NO DISCAPACITADO',
-                                                   'DISCAPACITADO'])
-
-    # Columnas de valores categorizados desconocidos
-    canton = tf.feature_column.categorical_column_with_hash_bucket(
-        'CANTON', hash_bucket_size=1000)
-
-    # Agrupando columnas segun su tipo de dato
-    numeric_tf_cols = [edad, escolaridad, poblacion, superficie, densidad,
-                       viviendas_ocupadas, ocupantes, p_jefat_fem, p_jefat_com]
-    categoric_tf_cols = [urbano, genero, est_vivienda, hacinamiento,
-                         alfabetismo, educacion, trabajo, seguro, extranjero,
-                         discapacidad, canton]
-
-    # TODO: quizas definir crossed_column entre canton y sus indicadores
-
-    return numeric_tf_cols + categoric_tf_cols
-'''
-
-
-def __build_estimator(model_dir, learning_rate=0.1, regularization='None'):
-
+def regresion_logistica(prefix, regularization='None', predicting='r1'):
+    """
+    Define un modelo de regresion, regularization -> 'l1', 'l2', 'None'
+    :param prefix: prefijo para archivos generados
+    :param regularization: 'l1', 'l2', 'None' -> tipo de regularización
+    :param predicting: ronda a predecir 'r1', 'r2', 'r2_with_r1'
+    :return: modelo de regresion logistica
+    """
+    global __predicting
+    __predicting = predicting
     columns = __build_model_columns()
     run_config = tf.estimator.RunConfig().replace(
         session_config=tf.ConfigProto(device_count={'GPU': 0}))
     _L1, _L2 = (1, 0) if regularization == 'l1' else (0, 1)
 
-    if regularization == 'None':
-        return tf.estimator.LinearClassifier(model_dir=model_dir,
-                                             feature_columns=columns,
-                                             config=run_config)
+    class_amount = 15 if predicting == 'r1' else 4
 
-    optimizer = tf.train.FtrlOptimizer(learning_rate=learning_rate,
+    if regularization == 'None':
+        return tf.estimator.LinearClassifier(model_dir=prefix,
+                                             feature_columns=columns,
+                                             config=run_config,
+                                             n_classes=class_amount)
+
+    optimizer = tf.train.FtrlOptimizer(learning_rate=__learning_rate,
                                        l1_regularization_strength=_L1,
                                        l2_regularization_strength=_L2)
 
-    return tf.estimator.LinearClassifier(model_dir=model_dir,
+    return tf.estimator.LinearClassifier(model_dir=prefix,
                                          feature_columns=columns,
                                          config=run_config,
-                                         optimizer=optimizer)
+                                         optimizer=optimizer,
+                                         n_classes=class_amount)
 
 
-def __input_fn(data_file, num_epochs, shuffle, batch_size):
+def rl_entrenar(model, train_data, prefix):
+    model.train(input_fn=lambda: __input_fn(train_data, prefix))
+    return model
+
+
+def rl_validar(model, validation_data, prefix):
+    results = model.evaluate(input_fn=lambda: __input_fn(validation_data,
+                                                         prefix))
+    for key in sorted(results):
+        print('%s: %s' % (key, results[key]))
+    return results
+
+
+def rl_predict(model, df_data):
+    pass
+
+
+def rl_normalize(data_list, normalization):
+    #
+    # Setup de los datos generados por el simulador
+    data = DataFrame(data_list, columns=data_columns)
+    #
+    # Normalización de las columnas densas
+    data = normalize(data, cols_to_norm, normalization)
+    #
+    # Conversión de partidos a números
+    data = categoric_to_numeric(data)
+    # data = data.drop('CANTON', axis=1)
+
+    return data
+
+
+# ---------------------- Funciones del modelo ---------------------------------
+
+
+def __input_fn(data, prefix):
 
     def parse_csv(value):
-        columns = tf.decode_csv(value, record_defaults=_CSV_COLUMN_DEFAULTS)
-        _features = dict(zip(_CSV_COLUMNS, columns))
-        label = _features.pop('VOTO_R2')
-        label = _features.pop('VOTO_R1')
-        return _features, label
+        global __predicting
+        if __predicting == 'r1':
+            example_defaults = [[''], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                                [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                                [0.], [0.], [0.], [0.], [0.], [0], [0]]
+        else:
+            example_defaults = [[''], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                                [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
+                                [0.], [0.], [0.], [0.], [0.], [0.], [0]]
 
-    dataset = tf.data.TextLineDataset(data_file)
+        columns = tf.decode_csv(value, example_defaults)
+        _features = dict(zip(data_columns, columns))
+        if __predicting == 'r1':
+            _features.pop('VOTO_R2', None)
+            _label = _features.pop('VOTO_R1')
+        elif __predicting == 'r2':
+            _features.pop('VOTO_R1', None)
+            _label = _features.pop('VOTO_R2')
+        else:
+            _label = _features.pop('VOTO_R2')
+        return _features, _label
 
-    if shuffle:
-        dataset = dataset.shuffle(buffer_size=_SHUFFLE_BUFFER)
-
-    dataset = dataset.map(parse_csv)
-
-    # We call repeat after shuffling, rather than before, to prevent separate
-    # epochs from blending together.
-    dataset = dataset.repeat(num_epochs)
-    dataset = dataset.batch(batch_size)
+    dataset = __rl_build_dataset(data, prefix, parse_csv)
 
     iterator = dataset.make_one_shot_iterator()
     features, labels = iterator.get_next()
+
     return features, labels
 
 
-def __train_input_fn(train_file, epochs_between_evals=2, batch_size=40):
-    return __input_fn(train_file, epochs_between_evals, True, batch_size)
+def __rl_build_dataset(data, prefix, parse_function):
+    #
+    # Generar archivos de datos
+    filename = __save_data_file(data, prefix)
+    #
+    # Parsear el archivo con data
+    dataset = tf.data.TextLineDataset(filename)
+    dataset = dataset.map(parse_function)
+    dataset = dataset.shuffle(shuffle_buffer_size)
+    dataset = dataset.batch(batch_size)
+
+    return dataset
 
 
-def __eval_input_fn(validat_file, epochs=1, batch=40):
-    return __input_fn(validat_file, epochs, False, batch)
+def __build_model_columns():
+
+    tf_numeric = tf.feature_column.numeric_column
+    edad = tf_numeric('EDAD')
+    escolaridad = tf_numeric('ESCOLARIDAD_PROMEDIO')
+    poblacion = tf_numeric('POBLACION_TOTAL')
+    superficie = tf_numeric('SUPERFICIE')
+    densidad = tf_numeric('DENSIDAD_POBLACION')
+    viviendas_ocupadas = tf_numeric('VIVIENDAS_INDIVIDUALES_OCUPADAS')
+    ocupantes = tf_numeric('PROMEDIO_DE_OCUPANTES')
+    p_jefat_fem = tf_numeric('P.JEFAT.FEMENINA')
+    p_jefat_com = tf_numeric('P.JEFAT.COMPARTIDA')
+    voto_r1 = tf_numeric('VOTO_R1')
+
+    # columnas categoricas convertidas a binario
+    urbano = tf_numeric(data_columns[2])
+    genero = tf_numeric(data_columns[3])
+    est_vivienda = tf_numeric(data_columns[5])
+    hacinamiento = tf_numeric(data_columns[6])
+    alfabetismo = tf_numeric(data_columns[7])
+    educacion = tf_numeric(data_columns[9])
+    trabajo = tf_numeric(data_columns[10])
+    seguro = tf_numeric(data_columns[11])
+    extranjero = tf_numeric(data_columns[12])
+    discapacidad = tf_numeric(data_columns[13])
+
+    # Columnas de valores categorizados desconocidos
+    canton = tf.feature_column.categorical_column_with_hash_bucket(
+        'CANTON', hash_bucket_size=1000)
+
+    cols = [canton, edad, escolaridad, poblacion, superficie, densidad,
+            viviendas_ocupadas, ocupantes, p_jefat_fem,
+            p_jefat_com, urbano, genero, est_vivienda, hacinamiento,
+            alfabetismo, educacion, trabajo, seguro, extranjero,
+            discapacidad]
+
+    if __predicting == 'r2_with_r1':
+        cols.append(voto_r1)
+
+    return cols
 
 
 # ---------------------- Funciones auxiliares ---------------------------------
 
 
-def __save_data_file(data_list, prefix):
-    data_df = DataFrame(data_list, columns=_CSV_COLUMNS)
-    filename = prefix + str(datetime.now().time())
-    filename = filename.replace(':', '_').replace('.', '_')
-    filename += '.csv'
+def __save_data_file(df, prefix):
 
-    guardar_como_csv(data_df, filename)
+    if not os.path.exists(prefix):
+        os.makedirs(prefix)
+
+    filename = prefix + '/' + prefix + str(datetime.now().time())
+    filename = filename.replace(':', '_').replace('.', '_')
+    filename += '.data'
+
+    guardar_como_csv(df, filename)
+
     return filename
 
 
 def main():
-    train_data = generar_muestra_pais(800)
-    test_data = generar_muestra_pais(200)
+    #
+    # generar y normalizar las muestras
+    data = generar_muestra_pais(500)
+    df_data = rl_normalize(data, 'os')
+    #
+    # separar 80% para entrenar y validar
+    t_data = df_data.sample(frac=0.8)
+    # el otro 20% del inicial para set holdout
+    data_to_predict = df_data.drop(t_data.index)
+    #
+    # separar 25% del conjunto de entrenamiento para validar
+    v_data = t_data.sample(frac=0.25)
+    t_data = t_data.drop(v_data.index)
+    #
+    # instanciar el modelo
+    modelo = regresion_logistica('reg_log', 'l1', 'r1')
+    #
+    # entrenar el modelo
+    modelo = rl_entrenar(modelo, t_data, 'reg_log')
 
-    clasificador = clasificador_regresion_logistica()
-    clasificador = entrenar_regr_log(clasificador, train_data)
-    #resultados = validar_regr_log(clasificador, test_data)
+    rl_validar(modelo, v_data, 'reg_log')
 
 
 if __name__ == '__main__':
     main()
-
-
