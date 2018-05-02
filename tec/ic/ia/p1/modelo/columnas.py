@@ -33,16 +33,3 @@ columnas = np.array([
 ])
 
 # -----------------------------------------------------------------------------
-
-# Columnas con valores categóricos
-__indices = [0, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13]
-columnas_c = columnas[__indices]
-# print(columnas_c) # Para comprobar que son las columnas de interés
-
-# -----------------------------------------------------------------------------
-
-# Columnas con valores númericos (que se debe normalizar)
-columnas_n = np.delete(columnas, __indices)
-# print(columnas_n) # Para comprobar que son las columnas de interés
-
-# -----------------------------------------------------------------------------
