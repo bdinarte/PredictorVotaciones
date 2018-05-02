@@ -66,3 +66,26 @@ def categoric_to_numeric(data):
     data['VOTO_R1'] = data['VOTO_R2'].map(partidos_r1_to_id())
     data['VOTO_R2'] = data['VOTO_R2'].map(partidos_r2_to_id())
     return data
+
+
+def id_to_partidos_r1():
+    return {0: 'ACCESIBILIDAD SIN EXCLUSION',
+            1: 'ACCION CIUDADANA',
+            2: 'ALIANZA DEMOCRATA CRISTIANA',
+            3: 'DE LOS TRABAJADORES',
+            4: 'FRENTE AMPLIO',
+            5: 'INTEGRACION NACIONAL',
+            6: 'LIBERACION NACIONAL',
+            7: 'MOVIMIENTO LIBERTARIO',
+            8: 'NUEVA GENERACION',
+            9: 'RENOVACION COSTARRICENSE',
+            10: 'REPUBLICANO SOCIAL CRISTIANO',
+            11: 'RESTAURACION NACIONAL',
+            12: 'UNIDAD SOCIAL CRISTIANA',
+            13: 'NULO', 14: 'BLANCO'}
+
+
+def id_to_partidos_r2():
+    return {0: 'RESTAURACION NACIONAL',
+            1: 'ACCION CIUDADANA',
+            2: 'NULO', 3: 'BLANCO'}
