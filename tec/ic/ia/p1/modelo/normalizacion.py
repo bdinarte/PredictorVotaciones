@@ -1,7 +1,4 @@
 
-import pandas as pd
-
-
 def normalize(data, attributes_to_norm, scale_function='fs'):
     """
     feature scaling(default), 'ss' standard dev, 'os' overmax scaling
