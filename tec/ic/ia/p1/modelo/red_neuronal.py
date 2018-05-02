@@ -102,7 +102,7 @@ def nn_entrenar(model, train_data, prefix):
     """
     Entrena un modelo de red neuronal
     :param model: modelo de red neuronal
-    :param train_data: dataframe con datos de entrenamiento
+    :param train_data: dataframe con datos de entrenamiento normalizados
     :param prefix: prefijo para los nombres de archivos
     :return:
     """
@@ -150,7 +150,7 @@ def nn_validar(model, validation_data, prefix):
     """
     Realiza la validación de la precisión de un modelo ya existente
     :param model: modelo de red neuronal
-    :param validation_data: dataframe con datos para validación
+    :param validation_data: dataframe con datos para validación normalizados
     :param prefix: prefijo para los archivos generados
     :return: TODO: definir retorno
     """
@@ -170,7 +170,7 @@ def nn_predict(model, df_data):
     """
     Remueve las etiquetas de los datos recibidos y las predice
     :param model: modelo nn
-    :param df_data: dataframe con los datos
+    :param df_data: dataframe con los datos normalizados
     :return: TODO: de momento un conteo de etiquetas
     """
     data_list = df_data.values.tolist()
@@ -203,7 +203,7 @@ from collections import Counter
 
 def nn_normalize(data_list, normalization):
     """
-    Normaliza atributos numéricos y convierte categóricos a binarios 
+    Normaliza atributos numéricos y convierte categóricos a binarios
     :param data_list: lista de listas con los datos
     :param normalization: 'os', 'ss', 'fs' -> overmax, standard, feature
     :return: dataframe con datos normalizados
