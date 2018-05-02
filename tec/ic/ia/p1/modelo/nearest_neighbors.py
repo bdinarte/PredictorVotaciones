@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from pprint import pprint
 from pc1.util.timeit import timeit
-from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import MinMaxScaler
 
 # -----------------------------------------------------------------------------
 
@@ -185,45 +185,52 @@ def knn(arbol, muestra, k_vecinos, recorrido=False):
         v_atrib_consulta = muestra[atributo]
         v_atrib_actual = nodo_actual[V_ATRIBUTO]
 
-        # Si hay empate se testea la distancia entre la muestra
-        # y los dos hijos. Se elige el camino con menor distancia
-        if v_atrib_consulta == v_atrib_actual:
-
-            test_izq = nodo_actual[IZQUIERDA][MEDIANA]
-            dist_izq = distancia(muestra[atributo], test_izq)
-
-            test_der = nodo_actual[DERECHA][MEDIANA]
-            dist_der = distancia(muestra[atributo], test_der)
-
-            # Si la distancia entre la muestra y el hijo de la izquierda
-            # es menor que el de la derecha, se resta un 1 para que funcione
-            # en el siguiente `if`
-            v_atrib_consulta += -1 if dist_izq <= dist_der else 1
-
-        if v_atrib_consulta < v_atrib_actual:
+        if nodo_actual[DERECHA] is None:
             nodo_actual = nodo_actual[IZQUIERDA]
 
         else:
-            nodo_actual = nodo_actual[DERECHA]
+            # Si hay empate se testea la distancia entre la muestra
+            # y los dos hijos. Se elige el camino con menor distancia
+            if v_atrib_consulta == v_atrib_actual:
+
+                test_izq = nodo_actual[IZQUIERDA]
+                test_der = nodo_actual[DERECHA]
+
+                test_izq = test_izq[MEDIANA if type(test_izq) == dict else 0]
+                test_der = test_der[MEDIANA if type(test_der) == dict else 0]
+
+                dist_izq = distancia(muestra[atributo], test_izq)
+                dist_der = distancia(muestra[atributo], test_der)
+
+                # Si la distancia entre la muestra y el hijo de la
+                # izquierda es menor que el de la derecha, se resta un 1
+                # para que funcione en el siguiente `if`
+                v_atrib_consulta += -1 if dist_izq <= dist_der else 1
+
+            if v_atrib_consulta < v_atrib_actual:
+                nodo_actual = nodo_actual[IZQUIERDA]
+
+            else:
+                nodo_actual = nodo_actual[DERECHA]
+
+    vecinos = np.array(vecinos)
+    etiquetas = np.array(etiquetas)
+    nodos_recorridos = np.copy(vecinos)
 
     # Se ha llegado a una hoja, si no es una tupla es una hoja
     # vacía por lo que retorna None
     if type(nodo_actual) == tuple:
 
-        vecinos = np.array(vecinos)
-        etiquetas = np.array(etiquetas)
-        nodos_recorridos = np.copy(vecinos)
-
         vecinos = np.append(nodo_actual[0], vecinos, axis=0)
         etiquetas = np.append(nodo_actual[1], etiquetas)
 
-        vecinos, etiquetas, distancias = cercanos(
-            vecinos, etiquetas, muestra, k_vecinos)
+    vecinos, etiquetas, distancias = cercanos(
+        vecinos, etiquetas, muestra, k_vecinos)
 
-        if not recorrido:
-            return vecinos, etiquetas, distancias
-        else:
-            return vecinos, etiquetas, distancias, nodos_recorridos
+    if not recorrido:
+        return vecinos, etiquetas, distancias
+    else:
+        return vecinos, etiquetas, distancias, nodos_recorridos
 
 # -----------------------------------------------------------------------------
 
@@ -255,34 +262,6 @@ def predecir(arbol, muestra, k_vecinos=5):
 
 # -----------------------------------------------------------------------------
 
-
-def clasificar(arbol, muestras, k_vecinos=5):
-
-    """
-    Retorna la precisión del modelo (el árbol) comparando las
-    prediccionesobtenidas sobre las muestras de prueba con sus
-    respectivas etiquetas correctas.
-    :param arbol: Diccionario kd-Tree previamente creado
-    :param muestras: Matriz de muestras para pruebas
-    :param k_vecinos: Cantidad máxima de vecinos más cercanos
-    :return: Preción obtenida
-    """
-
-    # Se extrae la última columna de las muestras, pues corresponde
-    # con las etiquetas correctas
-    etiqs_correctas = muestras[:, muestras.shape[1] - 1]
-    muestras = muestras[:, 0: muestras.shape[1] - 1]
-
-    # Para cada una de las muestras se realiza la respectiva predicción
-    etiqs_predicciones = [
-        predecir(arbol, muestra, k_vecinos) for muestra in muestras
-    ]
-
-    # Función de sklearn
-    return accuracy_score(etiqs_correctas, etiqs_predicciones)
-
-
-# -----------------------------------------------------------------------------
 
 def seleccionar(matriz, atribs_no_usados):
     """
@@ -536,16 +515,17 @@ def normalizar(matriz, menor=0.0, mayor=1.0):
            [1.  , 0.4 , 0.88]])
     """
 
-    maxs = np.max(matriz, axis=0)
-    mins = np.min(matriz, axis=0)
-    difs = maxs - mins
-    prom = mayor - menor
-    return mayor - ((prom * (maxs - matriz)) / difs)
+    # maxs = np.max(matriz, axis=0)
+    # mins = np.min(matriz, axis=0)
+    # difs = maxs - mins
+    # prom = mayor - menor
+    # return mayor - ((prom * (maxs - matriz)) / difs)
+    return MinMaxScaler().fit_transform(matriz)
 
 # -----------------------------------------------------------------------------
 
 
-def preprocesar(matriz, columnas, columnas_c, reordenar=True):
+def preprocesar(matriz, columnas, columnas_c):
 
     """
     A partir de la matriz de muestrss, se convierten los atributos
@@ -560,7 +540,6 @@ def preprocesar(matriz, columnas, columnas_c, reordenar=True):
     :param columnas: Nombres de las columnas de la matriz
     :param columnas_c: Lista de los nombres de las columnas categoricas a las
     que se les debe aplicar el algortimo ONE HOT ENCODING para convertirlas
-    :param reordenar: True si se debe aplicar 'shuffle' a las filas
 
     :return: Tupla con la siguiente información:
         ♣ [0] = Matriz N x M con valores númericos
@@ -573,7 +552,7 @@ def preprocesar(matriz, columnas, columnas_c, reordenar=True):
     ...                 [7, 'CAT_3', 9, 'ETIQ_3']])
     >>> cols = np.array(['COL_1', 'COL_2', 'COL_3', 'COL_4'])
     >>> cols_c = ['COL_2'] # Coumna categórica
-    >>> mat, etiqs = preprocesar(mat, cols, cols_c,reordenar=False)
+    >>> mat, etiqs = preprocesar(mat, cols, cols_c)
     >>> mat
     array([[0.  , 0.  , 1.  , 0.  , 0.  ],
            [0.2 , 0.75, 0.  , 1.  , 0.  ],
@@ -584,9 +563,6 @@ def preprocesar(matriz, columnas, columnas_c, reordenar=True):
 
     if type(matriz) == list:
         matriz = np.array(matriz)
-
-    if reordenar:
-        np.random.shuffle(matriz)
 
     # De la matriz de muestras, la última columna son las etiquetas
     etiquetas = matriz[:, matriz.shape[1] - 1]
@@ -599,6 +575,7 @@ def preprocesar(matriz, columnas, columnas_c, reordenar=True):
     # Por facilidad se convierte a un Dataframe y usar
     df = pd.DataFrame(matriz, columns=columnas)
     df = pd.get_dummies(df, columns=columnas_c)
+    print(df)
 
     # Por alguna razón df.as_matriz retorna una matriz de tipo
     # str por lo que es necesario cambiar el tipo, luego se normaliza
@@ -645,11 +622,11 @@ def ejemplo_kdtree():
                    'ETIQ_1',
                    'ETIQ_11'])
 
-    tree = kdtree((dt, et), max_profundidad=2)
+    tree = kdtree((dt, et), max_profundidad=5)
     print("Kd-Tree")
     pprint(tree)
 
-    consulta = np.array([14, 62, 30])
+    consulta = np.array([17, 42, 80])
     print("Consulta con k = 2: " + str(consulta))
 
     # Vecinos, etiquetas, distancias, nodos_recorridos
