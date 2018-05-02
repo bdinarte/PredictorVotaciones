@@ -1,4 +1,5 @@
 
+import os
 import sys
 sys.path.append('../..')
 
@@ -38,13 +39,23 @@ shuffle_buffer_size = 1000
 # menos pasadas
 batch_size = 1500
 __predicting = ''
-_learning_rate = 0.03
+__learning_rate = 0.03
 
 # ------------------------ Funciones públicas ---------------------------------
 
 
-def nn(layer_amount=3, units_per_layer=10, activation_f='relu',
-       activation_on_output='', predicting='r1'):
+def neural_network(layer_amount=3, units_per_layer=10, activation_f='relu',
+                   activation_on_output='', predicting='r1'):
+    """
+    funcion para crear un nuevo modelo de red neuronal
+    :param layer_amount: cantidad de capas de la red
+    :param units_per_layer: unidades por cada intermedia
+    :param activation_f: 'relu', 'softmax', 'softplus'
+    :param activation_on_output: activation_f o '' para dejar outputs sin
+    funcion
+    :param predicting: 'r1', 'r2', 'r2_with_r1' -> ronda a predecir
+    :return: modelo de red neuronal
+    """
 
     global __predicting
     __predicting = predicting
@@ -88,12 +99,18 @@ def nn(layer_amount=3, units_per_layer=10, activation_f='relu',
 
 
 def nn_entrenar(model, train_data, prefix):
-
-    global _learning_rate
+    """
+    Entrena un modelo de red neuronal
+    :param model: modelo de red neuronal
+    :param train_data: dataframe con datos de entrenamiento
+    :param prefix: prefijo para los nombres de archivos
+    :return:
+    """
+    global __learning_rate
     train_dataset = __nn_build_dataset(train_data, prefix)
     #
     # definir el tipo de optimizacion y learning rate
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=_learning_rate)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=__learning_rate)
     #
     # recopilar la precision y perdida por pasada a los datos
     loss_for_training = []
@@ -130,7 +147,13 @@ def nn_entrenar(model, train_data, prefix):
 
 
 def nn_validar(model, validation_data, prefix):
-
+    """
+    Realiza la validación de la precisión de un modelo ya existente
+    :param model: modelo de red neuronal
+    :param validation_data: dataframe con datos para validación
+    :param prefix: prefijo para los archivos generados
+    :return: TODO: definir retorno
+    """
     validation_dataset = __nn_build_dataset(validation_data, prefix)
 
     test_accuracy = tfe.metrics.Accuracy()
@@ -144,7 +167,12 @@ def nn_validar(model, validation_data, prefix):
 
 
 def nn_predict(model, df_data):
-
+    """
+    Remueve las etiquetas de los datos recibidos y las predice
+    :param model: modelo nn
+    :param df_data: dataframe con los datos
+    :return: TODO: de momento un conteo de etiquetas
+    """
     data_list = df_data.values.tolist()
 
     if __predicting == 'r1':
@@ -174,6 +202,12 @@ from collections import Counter
 
 
 def nn_normalize(data_list, normalization):
+    """
+    Normaliza atributos numéricos y convierte categóricos a binarios 
+    :param data_list: lista de listas con los datos
+    :param normalization: 'os', 'ss', 'fs' -> overmax, standard, feature
+    :return: dataframe con datos normalizados
+    """
     #
     # Setup de los datos generados por el simulador
     data = DataFrame(data_list, columns=data_columns)
@@ -199,8 +233,7 @@ def __nn_build_dataset(data, prefix):
     # Parsear el archivo con data
     dataset = tf.data.TextLineDataset(filename)
     dataset = dataset.map(__parse_csv)
-    # TODO: remove comment
-    #dataset = dataset.shuffle(shuffle_buffer_size)
+    dataset = dataset.shuffle(shuffle_buffer_size)
     dataset = dataset.batch(batch_size)
 
     return dataset
@@ -261,7 +294,10 @@ def __show_graphics(loss_results, accuracy_results):
 
 def __save_data_file(df, prefix):
 
-    filename = prefix + str(datetime.now().time())
+    if not os.path.exists(prefix):
+        os.makedirs(prefix)
+
+    filename = prefix + '/' + prefix + str(datetime.now().time())
     filename = filename.replace(':', '_').replace('.', '_')
     filename += '.data'
 
@@ -286,13 +322,15 @@ def main():
     t_data = t_data.drop(v_data.index)
     #
     # instanciar el modelo
-    modelo = nn(layer_amount=3, units_per_layer=5, activation_f='softplus',
-                activation_on_output='', predicting='r2_with_r1')
+    modelo = neural_network(layer_amount=3, units_per_layer=5,
+                            activation_f='softplus',
+                            activation_on_output='',
+                            predicting='r2_with_r1')
     #
     # entrenar el modelo
-    modelo, _, _ = nn_entrenar(modelo, t_data, 'training')
+    modelo, _, _ = nn_entrenar(modelo, t_data, 'red_nn')
 
-    print(str(nn_validar(modelo, v_data, 'validation')))
+    print(str(nn_validar(modelo, v_data, 'red_nn')))
 
     print(nn_predict(modelo, data_to_predict))
 
