@@ -6,7 +6,7 @@ import numpy as np
 
 # Columnas que retorna el simulador
 
-columnas = np.array([
+columnas_csv = np.array([
     'CANTON',
     'EDAD',
     'ES_URBANO',
