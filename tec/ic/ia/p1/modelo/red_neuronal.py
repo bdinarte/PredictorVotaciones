@@ -30,20 +30,21 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
-walk_data_times = 71
+walk_data_times = 101
 available_activations = ['relu', 'softmax', 'softplus']
-shuffle_buffer_size = 10000
+shuffle_buffer_size = 1000
 #
 # entre mas pequeño es el batch, mas lento el entrenamiento pero converge con
 # menos pasadas
-batch_size = 1000
+batch_size = 1500
 __predicting = ''
+_learning_rate = 0.03
 
 # ------------------------ Funciones públicas ---------------------------------
 
 
 def nn(layer_amount=3, units_per_layer=10, activation_f='relu',
-       activation_on_output=True, predicting='r1'):
+       activation_on_output='', predicting='r1'):
 
     global __predicting
     __predicting = predicting
@@ -70,12 +71,13 @@ def nn(layer_amount=3, units_per_layer=10, activation_f='relu',
                                                activation=activation_f))
     #
     # modificar la cantidad de unidades de salida segun las etiquetas
-    output_amount = 4 if predicting != 'r1' else 15
+    output_amount = 15 if predicting is 'r1' else 4
     #
     # para la última capa es posible no definir una función de activación
     if activation_on_output:
-        nn_layers.append(tf.keras.layers.Dense(output_amount,
-                                               activation=activation_f))
+        nn_layers.append(tf.keras.layers.Dense(
+            output_amount,
+            activation=activation_on_output))
     else:
         nn_layers.append(tf.keras.layers.Dense(output_amount))
     #
@@ -87,10 +89,11 @@ def nn(layer_amount=3, units_per_layer=10, activation_f='relu',
 
 def nn_entrenar(model, train_data, prefix):
 
+    global _learning_rate
     train_dataset = __nn_build_dataset(train_data, prefix)
     #
     # definir el tipo de optimizacion y learning rate
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.03)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=_learning_rate)
     #
     # recopilar la precision y perdida por pasada a los datos
     loss_for_training = []
@@ -196,7 +199,8 @@ def __nn_build_dataset(data, prefix):
     # Parsear el archivo con data
     dataset = tf.data.TextLineDataset(filename)
     dataset = dataset.map(__parse_csv)
-    dataset = dataset.shuffle(shuffle_buffer_size)
+    # TODO: remove comment
+    #dataset = dataset.shuffle(shuffle_buffer_size)
     dataset = dataset.batch(batch_size)
 
     return dataset
@@ -267,8 +271,10 @@ def __save_data_file(df, prefix):
 
 
 def main():
-    data = generar_muestra_pais(1000)
-    df_data = nn_normalize(data, 'os')
+    #
+    # generar y normalizar las muestras
+    data = generar_muestra_pais(500)
+    df_data = nn_normalize(data, 'ss')
     #
     # separar 80% para entrenar y validar
     t_data = df_data.sample(frac=0.8)
@@ -280,8 +286,8 @@ def main():
     t_data = t_data.drop(v_data.index)
     #
     # instanciar el modelo
-    modelo = nn(layer_amount=5, units_per_layer=5, activation_f='relu',
-                activation_on_output=False, predicting='r2_with_r1')
+    modelo = nn(layer_amount=3, units_per_layer=5, activation_f='softplus',
+                activation_on_output='', predicting='r2_with_r1')
     #
     # entrenar el modelo
     modelo, _, _ = nn_entrenar(modelo, t_data, 'training')
