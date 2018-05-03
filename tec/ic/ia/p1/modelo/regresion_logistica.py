@@ -7,14 +7,12 @@ from pandas import DataFrame
 from datetime import datetime
 
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
-from tec.ic.ia.pc1.g03 import generar_muestra_pais
+from tec.ic.ia.pc1.g03 import generar_muestra_pais, generar_muestra_provincia
 from p1.modelo.normalizacion import normalize, categoric_to_numeric
-from p1.modelo.normalizacion import partidos_r1_to_id, partidos_r2_to_id
 from p1.modelo.normalizacion import id_to_partidos_r1, id_to_partidos_r2
 from p1.modelo.manejo_archivos import guardar_como_csv
-
+from p1.util.util import agrupar
 
 # --------------------------- Constantes --------------------------------------
 
@@ -30,13 +28,13 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
-shuffle_buffer_size = 1000
 #
 # entre mas pequeño es el batch, mas lento el entrenamiento pero converge con
 # menos pasadas
 batch_size = 1500
 __predicting = ''
 __learning_rate = 0.03
+__k_fold_amount = 4
 
 # ------------------------ Funciones públicas ---------------------------------
 
@@ -76,7 +74,13 @@ def regresion_logistica(prefix, regularization='None', predicting='r1'):
 
 
 def rl_entrenar(model, train_data, prefix):
-    model.train(input_fn=lambda: __input_fn(train_data, prefix))
+    global __predicting
+    if __predicting == 'r2_with_r1':
+        for _ in range(5):
+            model.train(input_fn=lambda: __input_fn(train_data,
+                                                    prefix))
+    else:
+        model.train(input_fn=lambda: __input_fn(train_data, prefix))
     return model
 
 
@@ -168,7 +172,6 @@ def __rl_build_dataset(data, prefix, parse_function):
     # Parsear el archivo con data
     dataset = tf.data.TextLineDataset(filename)
     dataset = dataset.map(parse_function)
-    dataset = dataset.shuffle(shuffle_buffer_size)
     dataset = dataset.batch(batch_size)
 
     return dataset
@@ -219,6 +222,11 @@ def __build_model_columns():
 # ---------------------- Funciones auxiliares ---------------------------------
 
 
+def __split(_list, n):
+    k, m = divmod(len(_list), n)
+    return [_list[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
+
+
 def __save_data_file(df, prefix):
 
     if not os.path.exists(prefix):
@@ -233,35 +241,50 @@ def __save_data_file(df, prefix):
     return filename
 
 
-def main():
+def run_rl(sample_size=3000, normalization='os', test_percent=0.2,
+           regularization='l1', predicting='r1', prefix='rl_', provincia=''):
     #
     # generar y normalizar las muestras
-    data = generar_muestra_pais(2000)
-    df_data = rl_normalize(data, 'os')
-    #
-    # separar 80% para entrenar y validar
-    t_data = df_data.sample(frac=0.8)
-    # el otro 20% del inicial para set holdout
-    data_to_predict = df_data.drop(t_data.index)
-    #
-    # separar 25% del conjunto de entrenamiento para validar
-    v_data = t_data.sample(frac=0.25)
-    t_data = t_data.drop(v_data.index)
-    #
-    # instanciar el modelo
-    modelo = regresion_logistica('reg_log',
-                                 regularization='l2',
-                                 predicting='r2_with_r1')
-    #
-    # entrenar el modelo
-    modelo = rl_entrenar(modelo, t_data, 'reg_log')
+    if provincia:
+        data = generar_muestra_provincia(sample_size, provincia)
+    else:
+        data = generar_muestra_pais(sample_size)
 
-    acc, avg_loss = rl_validar(modelo, v_data, 'reg_log')
-    print('Precisión: ' + str(acc))
-    print('Pérdida: ' + str(avg_loss))
+    df_data = rl_normalize(data, normalization)
+    #
+    # separar un porcentaje para entrenar y uno de validar
+    training_data = df_data.sample(frac=(1 - test_percent))
+    #
+    # extraer el conjunto de pruebas
+    test_data = df_data.drop(training_data.index)
+    #
+    # la línea siguiente convierte de dataframe a lista preservando el tipo
+    # de dato original
+    training_list = list(list(x) for x in zip(
+        *(training_data[x].values.tolist() for x in training_data.columns)))
 
-    rl_predict(modelo, data_to_predict, 'reg_log')
+    k_groups = __split(training_list, __k_fold_amount)
+    models = list()
+    accuracies = list()
+    avg_losses = list()
+    for v_index in range(__k_fold_amount):
+        _prefix = prefix + '_' + str(v_index)
+        #
+        # instanciar el modelo
+        model = regresion_logistica(_prefix, regularization, predicting)
+        v_data, t_subset = agrupar(v_index, k_groups)
+        t_subset = DataFrame(t_subset, columns=data_columns)
+        v_data = DataFrame(v_data, columns=data_columns)
+        rl_entrenar(model, t_subset, _prefix)
+        acc, avg_loss = rl_validar(model, v_data, _prefix)
+        accuracies.append(acc)
+        avg_losses.append(avg_loss)
+        print('Subset ' + str(v_index) + ' completo.')
+
+    print('Precisión y pérdida promedio de cada entrenamiento:')
+    for i in range(__k_fold_amount):
+        print('Subset ' + str(i) + ' -> Precisión: ' + str(accuracies[i])
+              + ' Pérdida promedio: ' + str(avg_losses[i]))
 
 
-if __name__ == '__main__':
-    main()
+run_rl(1000, predicting='r2_with_r1')

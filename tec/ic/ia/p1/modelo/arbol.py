@@ -4,553 +4,13 @@ from texttable import Texttable
 import math
 from collections import Counter
 
+# -------------------------------------------------------------------------------
 
-"""
-# Pseudocodigo del arbol de decision  
-
-def decision_tree_learning(examples, attrs, parent_examples=()):
-    if len(examples) == 0:
-        return plurality_value(parent_examples)
-    elif all_same_class(examples):
-        return DecisionLeaf(examples[0][target])
-    elif len(attrs) == 0:
-        return plurality_value(examples)
-    else:
-        A = choose_attribute(attrs, examples)
-        tree = DecisionFork(A, dataset.attrnames[A], plurality_value(examples))
-        for (v_k, exs) in split_by(A, examples):
-            subtree = decision_tree_learning(
-                exs, removeall(A, attrs), examples)
-            tree.add(v_k, subtree)
-        return tree
-"""
-
-def decision_tree_learning(examples, attrs, parent_examples=()):
-    """
-    Construccion del arbol de decision, que se entrena a partir de un conjunto de muestras observadas
-    :param examples:
-    :param attrs:
-    :param parent_examples:
-    :return:
-    """
-
-    if len(examples) == 0:
-        return plurality_value(parent_examples[0], parent_examples)
-    elif len(examples[0]) == 1:
-        return Nodo(examples[0][-1], True)
-    elif len(attrs) == 0:
-        return plurality_value(examples[0], examples)
-    else:
-        A = str(choose_attribute(examples))
-        tree = NaryTree()
-        attrnames = get_attrnames(A, examples)
-
-        tree.insertar(A)
-        for name in attrnames:
-            tree.insertar(name, A)
-        plural_value = plurality_value(A, examples)
-
-        exs = delete_attr(A, examples)
-        attrs = remove_attr(A, attrs)
-        for v_k in attrnames:
-            subtree = decision_tree_learning(
-                exs, attrs, examples)
-            tree.insertar(subtree, v_k)
-        return tree
-
-
-def delete_attr(attr, examples):
-    """
-    Funcion utilizada para eliminar un atributo columna(attr) de un set de datos (examples)
-    :param attr: etiqueta del atributo que se va eliminar
-    :param examples: conjunto de datos al que se le eliminara la etiqueta attr
-    :return: set de datos sin el atributo columna, pasado por parametro
-    """
-    index = examples[0].index(attr)
-
-    for i in range(len(examples)):
-        del examples[i][index]
-
-    return examples
-
-def plurality_value(atributo_columna , examples):
-    """
-    Retorna el valor plural o mas comun de un conjunto de datos, es decir, el que mas
-    aparicios tiene en el set ingresado
-
-    Example from StackOverflow:
-    They would have said the majority class if there were only two classes.
-    Plurality is just the generalization of majority to more than 2 classes.
-    It just means take the most frequent class in that leaf and return that as your prediction.
-    For example, if you are classifying the colors of balls, and there are 3 blue balls, 2 red balls,
-    and 2 white balls in a leaf, return blue as your prediction.
-    :param atributo_columna: atributo sobre el que se determinara el valor de mayor pluralidad
-    :param examples: conjunto de muestras observadas
-    :return: etiqueta del atributo con mayor pluralidad
-    """
-
-    index_attr = examples[0].index(atributo_columna)
-    dictionary = {}
-    for i in range(len(examples)):
-        key = examples[i][index_attr]
-        if key in dictionary:
-            dictionary[key] += 1
-        else:
-            dictionary[key] = 1
-
-    return max(dictionary, key=dictionary.get)
-
-
-def get_attrnames(atributo_columna, examples):
-    """
-    Funcion utilizada para obtener el conjunto de valores posibles
-    qiue puede obtener un determinado atributo según el conjunto de
-    datos observados con que se esta entrenando el modelo
-    :param atributo_columna: Es el atributo sobre el cual se tomara la columna respectiva
-    y se determinaran los posibles valores que pueden obtener las muestras
-    :param examples: es el conjunto de muestras observadas
-    :return: lista de atributos que se le pueden asignar a la columna atributo_columna
-    """
-
-    list_attrnames = []
-    index_attr = examples[0].index(atributo_columna)
-
-    for i in range(1, len(examples)):
-        if list_attrnames.count(examples[i][index_attr]) == 0:
-            list_attrnames.append(examples[i][index_attr])
-
-    return list_attrnames
-
-
-
-def remove_attr(atributo_columna, attrs):
-    """
-    Elimina de la lista de atributos, todas las apariciones de un atributo en especifico
-    :param atributo_columna: atributo que se eliminara de la lista attrs
-    :param attrs: lista de atributos (header) en el que se encuentran todas las etiquetas
-    :return: lista de atributos (header) sin el atributo_columna que se esta ingresando
-    """
-    apariciones = attrs.count(atributo_columna)
-    for i in range(apariciones):
-        attrs.remove(atributo_columna)
-    return attrs
-
-
-# ---------------------------------------------------------------------
-
-class Nodo:
-    def __init__(self, valor, es_hoja=False):
-        self.es_hoja = es_hoja
-        self.info = valor
-        self.hijos = []
-
-    def get_info(self):
-        return self.info
-
-    def get_hijos(self):
-        return self.hijos
-
-
-# ---------------------------------------------------------------------
-
-class Arboln:
-    def __init__(self):
-        self.__raiz = None
-
-    def get_raiz(self):
-        return self.__raiz
-
-    # ******************************************************************
-    # Funcion de busqueda, retorna el nodo encontrado o retorna None
-    # ******************************************************************
-    def __buscar(self, valor, hermanos=None, pos=0):
-
-        if pos >= len(hermanos):
-            return None
-
-        if hermanos[pos].info == valor:
-            return hermanos[pos]
-
-        nodo = self.__buscar(valor, hermanos[pos].hijos)
-        if nodo is not None:
-            return nodo
-
-        nodo = self.__buscar(valor, hermanos, pos + 1)
-        if nodo is not None:
-            return nodo
-
-        return None
-
-    # ******************************************************************
-    # Funcion para buscar un valor en el arbol y decir si se encuentra o no
-    # ******************************************************************
-
-    def buscar(self, valor):
-
-        if self.__raiz == valor:
-            return True
-
-        if self.__buscar(valor, self.__raiz.hijos) is not None:
-            return True
-        return False
-
-    # ******************************************************************
-    # Insertar un nuevo nodo en el arbol
-    # ******************************************************************
-
-    def insertar(self, valor, val_padre=None, pos_hijo=0):
-
-        if self.__raiz is None:
-            self.__raiz = Nodo(valor)
-            return True
-
-        if val_padre == self.__raiz.info:
-            padre = self.__raiz
-        else:
-            padre = self.__buscar(val_padre, self.__raiz.hijos, 0)
-
-        if padre is not None:
-            padre.hijos.insert(pos_hijo, Nodo(valor))
-            return True
-
-        return False
-
-    # ******************************************************************
-    # Retorna la informacion del padre con mas hijos
-    # ******************************************************************
-
-    def padre_mas_hijos(self, nodos=None, pos=0):
-
-        if nodos is None:
-            if self.__raiz is None:
-                return None
-            nodos = [self.__raiz]
-            self.__mayorpadre = self.__raiz
-
-        if pos >= len(nodos):
-            return 0
-
-        if len(nodos[pos].hijos) > len(self.__mayorpadre.hijos):
-            self.__mayorpadre = nodos[pos]
-
-        self.padre_mas_hijos(nodos[pos].hijos)
-        self.padre_mas_hijos(nodos, pos + 1)
-
-        return self.__mayorpadre.info
-
-    # ******************************************************************
-    # Retorna el nro de hijos unicos (sin hermanos) en el arbol la raiz siempre es hijo unico
-    # ******************************************************************
-
-    def hijos_unicos(self, nodos=None, pos=0):
-        if nodos is None:
-            if self.__raiz is None:
-                return 0
-            nodos = [self.__raiz]
-
-        if pos >= len(nodos):
-            return 0
-
-        h_unico = 0
-        if len(nodos) == 1:
-            h_unico = 1
-
-        h_unicos_hijos = self.hijos_unicos(nodos[pos].hijos)
-        h_unicos_hermanos = self.hijos_unicos(nodos, pos + 1)
-
-        return h_unico + h_unicos_hijos + h_unicos_hermanos
-
-    # ******************************************************************
-    # Retorna True si dos valores indicados son nodos hermanos en el arbol n-ario
-    # ******************************************************************
-
-    def son_hermanos(self, fulano, sutano, nodos=None, pos=0):
-        if nodos is None:
-            if self.__raiz is None:
-                return False
-            nodos = [self.__raiz]
-
-        if pos >= len(nodos):
-            return False
-
-        hermano = None
-        if fulano == nodos[pos].info:  # Existe Fulano
-            hermano = sutano
-        elif sutano == nodos[pos].info:  # Existe Mengano
-            hermano = fulano
-
-        if hermano is not None:  # Buscar el hermano si exite fulano o sutano
-            for nodo in nodos:
-                if hermano == nodo.info:  # Encuentra al hermano
-                    return True
-
-        encontro = self.son_hermanos(fulano, sutano, nodos[pos].hijos)
-        if encontro:
-            return True
-
-        return self.son_hermanos(fulano, sutano, nodos, pos + 1)
-
-    # ******************************************************************
-    # Recorrido en Preorden
-    # ******************************************************************
-
-    def preorden(self, nodos=None, pos=0):
-
-        if nodos is None:
-            if self.__raiz is None:
-                return
-            nodos = [self.__raiz]
-
-        if pos >= len(nodos):
-            return
-
-        print(nodos[pos].info)
-        self.preorden(nodos[pos].hijos)
-        self.preorden(nodos, pos + 1)
-
-    # ******************************************************************
-    # Retorna la cantidad de nodos en el arbol que tienen mas de n hijos
-    # ******************************************************************
-
-    def nodos_mas_hijos_de(self, n, nodos=None, pos=0):
-        if nodos is None:
-            if self.__raiz is None:
-                return 0
-            nodos = [self.__raiz]
-
-        if pos >= len(nodos):
-            return 0
-
-        cont = 0
-        if len(nodos[pos].hijos) > n:
-            cont = 1
-
-        cont += self.nodos_mas_hijos_de(n, nodos[pos].hijos)
-        cont += self.nodos_mas_hijos_de(n, nodos, pos + 1)
-
-        return cont
-
-
-# ---------------------------------------------------------------------
-
-class DataSet:
-    def __init__(self, data):
-        self._data = data
-        self._entropy = 0
-        for featureValue in Feature((data[0].__len__() - 1), data).get_values():
-            self._entropy += self.minus_plog_2(featureValue.get_occurences() / data.__len__() - 1)
-
-    def get_entropy(self):
-        return self._entropy
-
-    def get_data(self):
-        return self._data
-
-    def minus_plog_2(self, p):
-        return_value = 0
-        p = abs(p)
-        if p != 0:
-            return_value = (-1) * p * log(p, 2)
-        return return_value
-
-    def __str__(self):
-        table = Texttable()
-        table.header(self._data[0])
-        for i in range(1, self._data.__len__()):
-            table.add_row(self._data[i])
-        return table.draw().__str__()
-
-
-# ---------------------------------------------------------------------
-
-class Feature:
-    def __init__(self, column, data):
-        self._name = data[0][column]
-        self._values = set()
-
-        for row in range(1, data.__len__()):
-            self._values.add(FeatureValue(data[row][column]))
-        for featureValue in self._values:
-            counter = 0
-            for row in range(1, data.__len__()):
-                if featureValue.get_name() == data[row][column]:
-                    counter += 1
-                    featureValue.set_occurences(counter)
-
-    def get_values(self):
-        return self._values
-
-    def get_name(self):
-        return self._name
-
-    def __str__(self):
-        return self._name
-
-
-# ---------------------------------------------------------------------
-
-class FeatureValue:
-    def __init__(self, name):
-        self._name = name
-        self._occurences = 0
-
-    def __eq__(self, other):
-        return (isinstance(other, FeatureValue)) and (other._name == self._name)
-
-    def __hash__(self):
-        return hash(self._name)
-
-    def get_name(self):
-        return self._name
-
-    def get_occurences(self):
-        return self._occurences
-
-    def set_occurences(self, occurences):
-        self._occurences = occurences
-
-    def __str__(self):
-        return self._name
-
-
-# ---------------------------------------------------------------------
-
-def create_data_set(featureValue, column, data):
-    returnData = [[FeatureValue for i in range(data[0].__len__())]
-                  for j in range(featureValue.get_occurences() + 1)]
-
-    returnData[0] = data[0]
-    counter = 1
-
-    for row in range(1, data.__len__()):
-        if data[row][column] == featureValue.get_name():
-            returnData[counter] = data[row]
-            counter += 1
-    return DataSet([row[:column] + row[column + 1:] for row in returnData])
-
-
-# ---------------------------------------------------------------------
-
-def generate_info_gain_table(featuresInfoGain):
-    table = Texttable()
-    table.header(['Feature', 'Information Gain'])
-
-    for key in featuresInfoGain:
-        table.add_row([key, round(featuresInfoGain[key], 5)])
-
-    return table.draw().__str__()
-
-
-# ---------------------------------------------------------------------
-
-def entropia(q):
-    """
-    Funcion que se encarga de determinar la geomancia de informacion de una cierta variable
-    Se utiliza para la seleccion de atributos, permitiendo seleccionar los que redezcan la incertidumbre
-    de clasificacion.
-    :param q: variable a la cual se le calculara el valor de entropia, para determinar el grado de incertidumbre
-    con que cuenta, y asi poder utilizar el calculo en la ganancia de información final
-    :return: valor de entropia de la variable evaluada
-    """
-
-    valor_entropia = -(q * log(q, 2) + (1 - q) * log(1 - q, 2))
-
-    return valor_entropia
-
-
-# ---------------------------------------------------------------------
-
-def ganancia(muestra):
-    """
-    Funcion para determinar la ganancia de informacion que brinda una determinada variable o atributo
-    :param muestra: es el conjunto de datos de una determinada variable de la cual se obtendra la ganancia
-    de informacion
-    :return: valor con la ganancia de informacion
-    """
-
-    proporcion_pos = porporcion_positivos(muestra)
-    valor_entropia = entropia(proporcion_pos)
-
-    return valor_entropia - resto(muestra)
-
-
-# ---------------------------------------------------------------------
-
-def resto(conjunto_muestras):
-    largo_muestra = len(conjunto_muestras)
-
-    resultado = 0
-    for i in range(0, largo_muestra - 1):
-        muestra = conjunto_muestras[i]
-
-    return resultado
-
-
-# ---------------------------------------------------------------------
-
-def porporcion_positivos(muestra):
-    """
-    Funcion encargada de determinar la porporcion de positivos que el conjunto de muestras
-    :param muestra: Es el conjunto de observaciones que se van a utilizar para entrenar el sistema
-    de las cuales se determinara la proporcion de positivos
-    :return: porcentaje de positivos (del atributo meta) que contiene el conjunto de muestras
-    """
-
-    total_muestras = len(muestra)
-    positivos = 0
-    for i in range(total_muestras):
-        muestra_aux = muestra[i]
-        dato_meta = muestra_aux[-1]
-        if dato_meta:
-            positivos += 1
-
-    return positivos / total_muestras
-
-
-# ---------------------------------------------------------------------
-
-def choose_attribute(examples):
-    """
-    Funcion utilizada para determinar el atributo que tiene mejor ganancia de informacion
-    a partir de un conjunto de muestras de ejemplo que son pasadas por parametro
-    :param examples: conjunto de muestras sobre las que se determina el atributo con
-    mayor ganancia de informacion
-    :return: etiqueta del atributo con mayor ganancia de informacion
-    """
-
-    dataSet = DataSet(examples)
-    featuresInfoGain = {}
-
-    for column in range(0, dataSet.get_data()[0].__len__() - 1):
-        feature = Feature(column, dataSet.get_data())
-        dataSets = [DataSet for i in range(feature.get_values().__len__())]
-
-        i = 0
-        for featureValue in feature.get_values():
-            dataSets[i] = create_data_set(featureValue, column, dataSet.get_data())
-            i += 1
-
-        summation = 0
-        for i in range(0, dataSets.__len__()):
-            summation += (((dataSets[i].get_data()).__len__() - 1) /
-                          (dataSet.get_data().__len__() - 1)) * dataSets[i].get_entropy()
-        featuresInfoGain[feature] = dataSet.get_entropy() - summation
-
-    # print(generate_info_gain_table(featuresInfoGain))
-    # print("\nBest feature to split on is: ", max(featuresInfoGain, key=featuresInfoGain.get), "\n")
-
-    best_feature = max(featuresInfoGain, key=featuresInfoGain.get)
-    return str(best_feature), featuresInfoGain[best_feature]
-
-
-# ---------------------------------------------------------------------
-# Ejemplos y pruebas
-# ---------------------------------------------------------------------
-
-##################################################
-# data class to hold csv data
-##################################################
 class data():
+    """
+    Clase que contendra el conjunto de datos(muestras, atributos, la meta, etc)
+    que seran utlizadas para generar el arbol
+    """
     def __init__(self, classifier):
         self.examples = []
         self.attributes = []
@@ -558,64 +18,8 @@ class data():
         self.classifier = classifier
         self.class_index = None
 
-"""
+# -------------------------------------------------------------------------------
 
-##################################################
-# Preprocess dataset
-##################################################
-def preprocess2(dataset):
-    print("Preprocessing data...")
-
-    class_values = [example[dataset.class_index] for example in dataset.examples]
-    class_mode = Counter(class_values)
-    class_mode = class_mode.most_common(1)[0][0]
-
-    for attr_index in range(len(dataset.attributes)):
-
-        ex_0class = filter(lambda x: x[dataset.class_index] == '0', dataset.examples)
-        values_0class = [example[attr_index] for example in ex_0class]
-
-        ex_1class = filter(lambda x: x[dataset.class_index] == '1', dataset.examples)
-        values_1class = [example[attr_index] for example in ex_1class]
-
-        values = Counter(values_0class)
-        value_counts = values.most_common()
-
-        mode0 = values.most_common(1)[0][0]
-        if mode0 == '?':
-            mode0 = values.most_common(2)[1][0]
-
-        values = Counter(values_1class)
-        mode1 = values.most_common(1)[0][0]
-
-        if mode1 == '?':
-            mode1 = values.most_common(2)[1][0]
-
-        mode_01 = [mode0, mode1]
-
-        attr_modes = [0] * len(dataset.attributes)
-        attr_modes[attr_index] = mode_01
-
-        for example in dataset.examples:
-            if (example[attr_index] == '?'):
-                if (example[dataset.class_index] == '0'):
-                    example[attr_index] = attr_modes[attr_index][0]
-                elif (example[dataset.class_index] == '1'):
-                    example[attr_index] = attr_modes[attr_index][1]
-                else:
-                    example[attr_index] = class_mode
-
-        # convert attributes that are numeric to floats
-        for example in dataset.examples:
-            for x in range(len(dataset.examples[0])):
-                if dataset.attributes[x] == 'True':
-                    example[x] = float(example[x])
-"""
-
-
-##################################################
-# Preprocess dataset
-##################################################
 def preprocess2(dataset):
     print("Preprocessing data...")
 
@@ -672,9 +76,8 @@ def preprocess2(dataset):
                     example[x] = float(example[x])
 
 
-##################################################
-# tree node class that will make up the tree
-##################################################
+# -------------------------------------------------------------------------------
+
 class treeNode():
     def __init__(self, is_leaf, classification, attr_split_index, attr_split_value, parent, upper_child, lower_child,
                  height):
@@ -689,21 +92,7 @@ class treeNode():
         self.height = None
 
 
-##################################################
-# compute tree recursively
-##################################################
-
-# initialize Tree
-# if dataset is pure (all one result) or there is other stopping criteria then stop
-# for all attributes a in dataset
-# compute information-theoretic criteria if we split on a
-# abest = best attribute according to above
-# tree = create a decision node that tests abest in the root
-# dv (v=1,2,3,...) = induced sub-datasets from D based on abest
-# for all dv
-# tree = compute_tree(dv)
-# attach tree to the corresponding branch of Tree
-# return tree
+# -------------------------------------------------------------------------------
 
 def compute_tree(dataset, parent_node, classifier):
     node = treeNode(True, None, None, None, parent_node, None, None, 0)
@@ -801,9 +190,8 @@ def compute_tree(dataset, parent_node, classifier):
     return node
 
 
-##################################################
-# Classify dataset
-##################################################
+# -------------------------------------------------------------------------------
+
 def classify_leaf(dataset, classifier):
     ones = one_count(dataset.examples, dataset.attributes, classifier)
     total = len(dataset.examples)
@@ -814,9 +202,8 @@ def classify_leaf(dataset, classifier):
         return 0
 
 
-##################################################
-# Calculate the entropy of the current dataset
-##################################################
+# -------------------------------------------------------------------------------
+
 def calc_dataset_entropy(dataset, classifier):
     ones = one_count(dataset.examples, dataset.attributes, classifier)
     total_examples = len(dataset.examples);
@@ -833,9 +220,8 @@ def calc_dataset_entropy(dataset, classifier):
     return entropy
 
 
-##################################################
-# Calculate the gain of a particular attribute split
-##################################################
+# -------------------------------------------------------------------------------
+
 def calc_gain(dataset, entropy, val, attr_index):
     classifier = dataset.attributes[attr_index]
     attr_entropy = 0
@@ -864,27 +250,7 @@ def calc_gain(dataset, entropy, val, attr_index):
     return entropy - attr_entropy
 
 
-##################################################
-# count number of examples with classification "1"
-##################################################
-"""
-def one_count(instances, attributes, classifier):
-    count = 0
-    class_index = None    
-
-    # find index of classifier
-    for a in range(len(attributes)):
-        if attributes[a] == classifier:
-            class_index = a
-        else:
-            class_index = len(attributes) - 1
-
-    for i in instances:
-        if i[class_index] == "1":
-            count += 1
-    return count
-"""
-
+# -------------------------------------------------------------------------------
 
 def get_attrnames(index_attr, examples):
     """
@@ -906,6 +272,8 @@ def get_attrnames(index_attr, examples):
     return list_attrnames
 
 
+# -------------------------------------------------------------------------------
+
 def one_count(instances, attributes, classifier):
     # find index of classifier
     class_index = attributes.index(classifier)
@@ -917,9 +285,8 @@ def one_count(instances, attributes, classifier):
     return count
 
 
-##################################################
-# Prune tree
-##################################################
+# -------------------------------------------------------------------------------
+
 def prune_tree(root, node, dataset, best_score):
     # if node is a leaf
     if (node.is_leaf == True):
@@ -956,9 +323,8 @@ def prune_tree(root, node, dataset, best_score):
         return new_score
 
 
-##################################################
-# Validate tree
-##################################################
+# -------------------------------------------------------------------------------
+
 def validate_tree(node, dataset):
     total = len(dataset.examples)
     correct = 0
@@ -968,9 +334,8 @@ def validate_tree(node, dataset):
     return correct / total
 
 
-##################################################
-# Validate example
-##################################################
+# -------------------------------------------------------------------------------
+
 def validate_example(node, example):
     if (node.is_leaf == True):
         projected = node.classification
@@ -986,9 +351,8 @@ def validate_example(node, example):
         return validate_example(node.lower_child, example)
 
 
-##################################################
-# Test example
-##################################################
+# -------------------------------------------------------------------------------
+
 def test_example(example, node, class_index):
     if (node.is_leaf == True):
         return node.classification
@@ -999,9 +363,8 @@ def test_example(example, node, class_index):
             return test_example(example, node.lower_child, class_index)
 
 
-##################################################
-# Print tree
-##################################################
+# -------------------------------------------------------------------------------
+
 def print_tree(node):
     if (node.is_leaf == True):
         for x in range(node.height):
@@ -1018,9 +381,8 @@ def print_tree(node):
     print_tree(node.lower_child)
 
 
-##################################################
-# Print tree in disjunctive normal form
-##################################################
+# -------------------------------------------------------------------------------
+
 def print_disjunctive(node, dataset, dnf_string):
     if (node.parent == None):
         dnf_string = "Recorrido\t"
@@ -1037,97 +399,7 @@ def print_disjunctive(node, dataset, dnf_string):
         return
 
 
-##################################################
-# main function, organize data and execute functions based on input
-# need to account for missing data
-##################################################
-
-"""
-def main():
-    args = str(sys.argv)
-    args = ast.literal_eval(args)
-    if (len(args) < 2):
-        print(
-            "You have input less than the minimum number of arguments. Go back and read README.txt and do it right next time!")
-    elif (args[1][-4:] != ".csv"):
-        print("Your training file (second argument) must be a .csv!")
-    else:
-        datafile = args[1]
-        dataset = data("")
-        if ("-d" in args):
-            datatypes = args[args.index("-d") + 1]
-        else:
-            datatypes = 'datatypes.csv'
-        read_data(dataset, datafile, datatypes)
-        arg3 = args[2]
-        if (arg3 in dataset.attributes):
-            classifier = arg3
-        else:
-            classifier = dataset.attributes[-1]
-
-        dataset.classifier = classifier
-
-        # find index of classifier
-        for a in range(len(dataset.attributes)):
-            if dataset.attributes[a] == dataset.classifier:
-                dataset.class_index = a
-            else:
-                dataset.class_index = range(len(dataset.attributes))[-1]
-
-        preprocess2(dataset)
-
-        print("Computing tree...")
-        root = compute_tree(dataset, None, classifier)
-        if ("-s" in args):
-            print_disjunctive(root, dataset, "")
-            print("\n")
-        if ("-v" in args):
-            datavalidate = args[args.index("-v") + 1]
-            print("Validating tree...")
-
-            validateset = data(classifier)
-            read_data(validateset, datavalidate, datatypes)
-            for a in range(len(dataset.attributes)):
-                if validateset.attributes[a] == validateset.classifier:
-                    validateset.class_index = a
-                else:
-                    validateset.class_index = range(len(validateset.attributes))[-1]
-            preprocess2(validateset)
-            best_score = validate_tree(root, validateset)
-
-            print("Initial (pre-pruning) validation set score: " + str(100 * best_score) + "%")
-        if ("-p" in args):
-            if ("-v" not in args):
-                print("Error: You must validate if you want to prune")
-            else:
-                post_prune_accuracy = 100 * prune_tree(root, root, validateset, best_score)
-                print("Post-pruning score on validation set: " + str(post_prune_accuracy) + "%")
-        if ("-t" in args):
-            datatest = args[args.index("-t") + 1]
-            testset = data(classifier)
-            read_data(testset, datatest, datatypes)
-            for a in range(len(dataset.attributes)):
-                if testset.attributes[a] == testset.classifier:
-                    testset.class_index = a
-                else:
-                    testset.class_index = range(len(testset.attributes))[-1]
-            print("Testing model on " + str(datatest))
-            for example in testset.examples:
-                example[testset.class_index] = '0'
-            testset.examples[0][testset.class_index] = '1'
-            testset.examples[1][testset.class_index] = '1'
-            testset.examples[2][testset.class_index] = '?'
-            preprocess2(testset)
-            b = open('results.csv', 'w')
-            a = csv.writer(b)
-            for example in testset.examples:
-                example[testset.class_index] = test_example(example, root, testset.class_index)
-            saveset = testset
-            saveset.examples = [saveset.attributes] + saveset.examples
-            a.writerows(saveset.examples)
-            b.close()
-            print("Testing complete. Results outputted to results.csv")
-"""
+# -------------------------------------------------------------------------------
 
 muestra_entrenamiento = [
     ['SAN JOSE', '1', '25', 'SI', 'PAC'],
@@ -1169,9 +441,11 @@ muestra_entrenamiento3 = [['ESPARZA', 50, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. B
 muestra_validacion3 = [['CURRIDABAT', 39, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 65206, 15.9, 4088, 19146, 3.4, 35.2, 8.5, 'ACCION CIUDADANA'], ['BUENOS AIRES', 61, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 3.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 45244, 2384.2, 19, 12205, 3.7, 25.3, 6.7, 'BLANCO'], ['PARAISO', 36, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 57743, 411.9, 140, 14626, 3.94, 26.0, 4.9, 'ACCION CIUDADANA'], ['DESAMPARADOS', 64, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 208411, 118.3, 1762, 57355, 3.62, 34.2, 6.9, 'RESTAURACION NACIONAL'], ['ALAJUELA', 63, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'LIBERACION NACIONAL'], ['MONTES DE ORO', 60, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.1, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 12950, 244.8, 53, 3929, 3.29, 24.8, 8.4, 'UNIDAD SOCIAL CRISTIANA'], ['ESPARZA', 49, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 28644, 216.8, 132, 8435, 3.39, 26.6, 8.1, 'LIBERACION NACIONAL'], ['TURRIALBA', 20, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.3, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 69616, 1642.7, 42, 20453, 3.4, 26.5, 8.3, 'INTEGRACION NACIONAL'], ['VAZQUEZ DE CORONADO', 43, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.8, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 60486, 222.2, 272, 17155, 3.52, 31.3, 8.1, 'INTEGRACION NACIONAL'], ['HEREDIA', 64, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'ACCION CIUDADANA'], ['ALAJUELA', 61, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'LIBERACION NACIONAL'], ['ALAJUELA', 29, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'ACCION CIUDADANA'], ['OREAMUNO', 62, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 45473, 201.3, 226, 11232, 4.04, 26.0, 7.2, 'INTEGRACION NACIONAL'], ['ESCAZU', 45, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 13.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 56509, 34.5, 1638, 16565, 3.4, 32.5, 8.7, 'LIBERACION NACIONAL'], ['GOLFITO', 41, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'NO ALFABETIZADO', 9.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 39150, 1754.0, 22, 11576, 3.37, 27.7, 6.6, 'LIBERACION NACIONAL'], ['PALMARES', 24, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.5, 'EN EDUCACION REGULAR', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 34716, 38.1, 912, 9657, 3.58, 27.6, 9.5, 'UNIDAD SOCIAL CRISTIANA'], ['GRECIA', 41, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 76898, 395.7, 194, 21709, 3.53, 24.0, 7.0, 'ACCION CIUDADANA'], ['SAN JOSE', 18, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.3, 'EN EDUCACION REGULAR', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'INTEGRACION NACIONAL'], ['NICOYA', 26, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.0, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 50825, 1333.7, 38, 15038, 3.38, 30.7, 5.9, 'ACCION CIUDADANA'], ['UPALA', 35, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'NO ALFABETIZADO', 6.0, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 43953, 1580.7, 28, 11518, 3.81, 24.9, 7.7, 'RESTAURACION NACIONAL'], ['MONTES DE OCA', 50, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 49132, 15.2, 3241, 16589, 2.94, 40.4, 9.9, 'UNIDAD SOCIAL CRISTIANA'], ['SIQUIRRES', 36, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 56786, 860.2, 66, 16206, 3.49, 25.0, 6.6, 'RESTAURACION NACIONAL'], ['HEREDIA', 44, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. HACINADA', 'ALFABETIZADO', 12.2, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'RESTAURACION NACIONAL'], ['GOICOECHEA', 24, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 115084, 31.5, 3653, 32520, 3.53, 37.1, 7.3, 'ACCION CIUDADANA'], ['DESAMPARADOS', 42, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.6, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 208411, 118.3, 1762, 57355, 3.62, 34.2, 6.9, 'RESTAURACION NACIONAL'], ['SIQUIRRES', 44, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 56786, 860.2, 66, 16206, 3.49, 25.0, 6.6, 'RESTAURACION NACIONAL'], ['PURISCAL', 40, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 33004, 553.7, 60, 9787, 3.36, 28.2, 6.9, 'LIBERACION NACIONAL'], ['PALMARES', 25, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 34716, 38.1, 912, 9657, 3.58, 27.6, 9.5, 'UNIDAD SOCIAL CRISTIANA'], ['PURISCAL', 44, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 33004, 553.7, 60, 9787, 3.36, 28.2, 6.9, 'UNIDAD SOCIAL CRISTIANA'], ['OSA', 58, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 29433, 1930.2, 15, 8904, 3.3, 26.6, 8.6, 'UNIDAD SOCIAL CRISTIANA'], ['ALAJUELA', 25, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'RESTAURACION NACIONAL'], ['LOS CHILES', 22, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'NO ALFABETIZADO', 5.1, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 23735, 1358.9, 17, 6035, 3.93, 22.5, 8.0, 'LIBERACION NACIONAL'], ['HEREDIA', 49, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 12.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'RESTAURACION NACIONAL'], ['SAN JOSE', 41, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'ACCION CIUDADANA'], ['SAN JOSE', 52, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'ACCION CIUDADANA'], ['LA UNION', 62, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.0, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 99399, 44.8, 2217, 26979, 3.67, 31.5, 8.4, 'UNIDAD SOCIAL CRISTIANA'], ['ASERRI', 44, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 57892, 167.1, 346, 16120, 3.59, 30.0, 5.8, 'REPUBLICANO SOCIAL CRISTIANO'], ['SAN JOSE', 39, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'UNIDAD SOCIAL CRISTIANA'], ['TIBAS', 49, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 13.1, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 64842, 8.1, 7956, 19160, 3.38, 40.1, 7.6, 'LIBERACION NACIONAL'], ['MORAVIA', 60, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. HACINADA', 'ALFABETIZADO', 11.1, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 56919, 28.6, 1989, 16874, 3.36, 33.9, 8.3, 'RESTAURACION NACIONAL'], ['SAN JOSE', 43, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'UNIDAD SOCIAL CRISTIANA'], ['SAN CARLOS', 50, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 4.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 163745, 3348.0, 49, 44966, 3.62, 24.7, 7.6, 'RESTAURACION NACIONAL'], ['TURRIALBA', 55, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.0, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 69616, 1642.7, 42, 20453, 3.4, 26.5, 8.3, 'LIBERACION NACIONAL'], ['ALAJUELA', 21, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'UNIDAD SOCIAL CRISTIANA'], ['HEREDIA', 33, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 13.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'RESTAURACION NACIONAL'], ['GUACIMO', 37, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.0, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 41266, 576.5, 72, 11797, 3.47, 27.6, 5.4, 'RESTAURACION NACIONAL'], ['LA UNION', 40, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 99399, 44.8, 2217, 26979, 3.67, 31.5, 8.4, 'LIBERACION NACIONAL'], ['ABANGARES', 19, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 18039, 675.8, 27, 5311, 3.39, 26.7, 6.6, 'LIBERACION NACIONAL'], ['ALAJUELA', 34, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'ACCION CIUDADANA'], ['TURRUBARES', 25, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 5512, 415.3, 13, 1679, 3.27, 24.2, 10.9, 'LIBERACION NACIONAL'], ['LA UNION', 30, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 99399, 44.8, 2217, 26979, 3.67, 31.5, 8.4, 'RESTAURACION NACIONAL'], ['SAN RAFAEL', 53, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 45965, 48.4, 950, 12957, 3.54, 30.5, 10.3, 'UNIDAD SOCIAL CRISTIANA'], ['HEREDIA', 40, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'ACCION CIUDADANA'], ['SAN JOSE', 21, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'ACCION CIUDADANA'], ['MATINA', 33, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 37721, 772.6, 49, 10410, 3.59, 22.6, 2.7, 'RESTAURACION NACIONAL'], ['PALMARES', 33, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.5, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 34716, 38.1, 912, 9657, 3.58, 27.6, 9.5, 'LIBERACION NACIONAL'], ['JIMENEZ', 63, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 14669, 286.4, 51, 4113, 3.56, 25.6, 10.0, 'UNIDAD SOCIAL CRISTIANA'], ['SANTA ANA', 61, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 49123, 61.4, 800, 14235, 3.43, 29.8, 10.2, 'ACCION CIUDADANA'], ['CARTAGO', 52, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 147898, 287.8, 514, 38618, 3.8, 28.7, 6.4, 'NUEVA GENERACION'], ['SAN CARLOS', 36, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 163745, 3348.0, 49, 44966, 3.62, 24.7, 7.6, 'LIBERACION NACIONAL'], ['SAN JOSE', 46, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'UNIDAD SOCIAL CRISTIANA'], ['PARAISO', 46, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 57743, 411.9, 140, 14626, 3.94, 26.0, 4.9, 'LIBERACION NACIONAL'], ['OROTINA', 19, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.6, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 20341, 141.9, 143, 6024, 3.37, 27.8, 5.1, 'LIBERACION NACIONAL'], ['PALMARES', 29, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 34716, 38.1, 912, 9657, 3.58, 27.6, 9.5, 'ACCION CIUDADANA'], ['LIBERIA', 64, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 62987, 1436.5, 44, 16577, 3.75, 33.1, 7.5, 'RESTAURACION NACIONAL'], ['TIBAS', 58, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 64842, 8.1, 7956, 19160, 3.38, 40.1, 7.6, 'REPUBLICANO SOCIAL CRISTIANO'], ['BELEN', 24, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 21633, 12.1, 1780, 6011, 3.59, 28.6, 10.6, 'INTEGRACION NACIONAL'], ['SANTA CRUZ', 29, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.5, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 55104, 1312.3, 42, 16645, 3.31, 31.7, 4.9, 'ACCION CIUDADANA'], ['ALAJUELITA', 35, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 77603, 21.2, 3666, 19832, 3.91, 36.3, 5.8, 'ACCESIBILIDAD SIN EXCLUSION'], ['SAN CARLOS', 63, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'NO ALFABETIZADO', 4.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 163745, 3348.0, 49, 44966, 3.62, 24.7, 7.6, 'UNIDAD SOCIAL CRISTIANA'], ['BARVA', 53, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 40660, 53.8, 756, 11291, 3.59, 27.4, 9.5, 'MOVIMIENTO LIBERTARIO'], ['SAN JOSE', 47, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'UNIDAD SOCIAL CRISTIANA'], ['NANDAYURE', 37, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'NO ALFABETIZADO', 8.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 11121, 565.6, 20, 3307, 3.35, 23.8, 11.2, 'ACCION CIUDADANA'], ['PUNTARENAS', 26, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 115019, 1842.3, 62, 33228, 3.44, 29.9, 4.8, 'NULO'], ['SANTA CRUZ', 39, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.5, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 55104, 1312.3, 42, 16645, 3.31, 31.7, 4.9, 'UNIDAD SOCIAL CRISTIANA'], ['COTO BRUS', 63, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 38453, 933.9, 41, 10936, 3.5, 24.6, 7.8, 'UNIDAD SOCIAL CRISTIANA'], ['ATENAS', 57, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 25460, 127.2, 200, 7472, 3.41, 22.9, 8.5, 'ACCION CIUDADANA'], ['GOLFITO', 38, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 39150, 1754.0, 22, 11576, 3.37, 27.7, 6.6, 'LIBERACION NACIONAL'], ['CARTAGO', 60, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.6, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 147898, 287.8, 514, 38618, 3.8, 28.7, 6.4, 'UNIDAD SOCIAL CRISTIANA'], ['PURISCAL', 60, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 4.0, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 33004, 553.7, 60, 9787, 3.36, 28.2, 6.9, 'REPUBLICANO SOCIAL CRISTIANO'], ['POCOCI', 46, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 125962, 2403.5, 52, 36238, 3.46, 26.5, 6.3, 'RESTAURACION NACIONAL'], ['PEREZ ZELEDON', 37, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.1, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 134534, 1905.5, 71, 38508, 3.48, 29.3, 7.8, 'LIBERACION NACIONAL'], ['CANHAS', 30, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 26201, 682.2, 38, 7172, 3.65, 28.8, 6.0, 'RESTAURACION NACIONAL'], ['NICOYA', 36, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.0, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 50825, 1333.7, 38, 15038, 3.38, 30.7, 5.9, 'LIBERACION NACIONAL'], ['TURRUBARES', 35, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 5512, 415.3, 13, 1679, 3.27, 24.2, 10.9, 'RESTAURACION NACIONAL'], ['LA UNION', 21, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 99399, 44.8, 2217, 26979, 3.67, 31.5, 8.4, 'LIBERACION NACIONAL'], ['CARTAGO', 57, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.6, 'EN EDUCACION REGULAR', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 147898, 287.8, 514, 38618, 3.8, 28.7, 6.4, 'UNIDAD SOCIAL CRISTIANA'], ['CORREDORES', 64, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 4.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 41831, 620.6, 67, 11849, 3.52, 28.3, 6.1, 'ACCION CIUDADANA'], ['DESAMPARADOS', 48, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 208411, 118.3, 1762, 57355, 3.62, 34.2, 6.9, 'LIBERACION NACIONAL'], ['MORAVIA', 57, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.1, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 56919, 28.6, 1989, 16874, 3.36, 33.9, 8.3, 'ACCION CIUDADANA'], ['SANTA BARBARA', 38, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.6, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 36243, 53.2, 681, 10107, 3.58, 24.6, 8.0, 'REPUBLICANO SOCIAL CRISTIANO'], ['ALAJUELA', 57, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'ACCION CIUDADANA'], ['CARTAGO', 33, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.8, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 147898, 287.8, 514, 38618, 3.8, 28.7, 6.4, 'UNIDAD SOCIAL CRISTIANA'], ['LIBERIA', 54, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.5, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 62987, 1436.5, 44, 16577, 3.75, 33.1, 7.5, 'UNIDAD SOCIAL CRISTIANA'], ['SAN JOSE', 60, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.2, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'ACCION CIUDADANA'], ['TIBAS', 28, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 12.1, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 64842, 8.1, 7956, 19160, 3.38, 40.1, 7.6, 'UNIDAD SOCIAL CRISTIANA'], ['CARTAGO', 49, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 147898, 287.8, 514, 38618, 3.8, 28.7, 6.4, 'ACCION CIUDADANA'], ['VAZQUEZ DE CORONADO', 57, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 60486, 222.2, 272, 17155, 3.52, 31.3, 8.1, 'UNIDAD SOCIAL CRISTIANA'], ['MONTES DE OCA', 32, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 14.9, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 49132, 15.2, 3241, 16589, 2.94, 40.4, 9.9, 'INTEGRACION NACIONAL'], ['GOLFITO', 55, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 4.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 39150, 1754.0, 22, 11576, 3.37, 27.7, 6.6, 'LIBERACION NACIONAL'], ['TURRIALBA', 51, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. HACINADA', 'ALFABETIZADO', 4.0, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 69616, 1642.7, 42, 20453, 3.4, 26.5, 8.3, 'RESTAURACION NACIONAL'], ['SAN JOSE', 52, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'INTEGRACION NACIONAL'], ['SAN CARLOS', 22, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 163745, 3348.0, 49, 44966, 3.62, 24.7, 7.6, 'ACCION CIUDADANA'], ['MORAVIA', 39, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 56919, 28.6, 1989, 16874, 3.36, 33.9, 8.3, 'INTEGRACION NACIONAL'], ['MORA', 43, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.9, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 26294, 162.0, 162, 7782, 3.38, 28.7, 10.1, 'INTEGRACION NACIONAL'], ['SANTA BARBARA', 45, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.6, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 36243, 53.2, 681, 10107, 3.58, 24.6, 8.0, 'ACCION CIUDADANA'], ['PALMARES', 31, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 34716, 38.1, 912, 9657, 3.58, 27.6, 9.5, 'RESTAURACION NACIONAL'], ['GOICOECHEA', 53, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'DISCAPACITADO', 115084, 31.5, 3653, 32520, 3.53, 37.1, 7.3, 'UNIDAD SOCIAL CRISTIANA'], ['BELEN', 33, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 21633, 12.1, 1780, 6011, 3.59, 28.6, 10.6, 'UNIDAD SOCIAL CRISTIANA'], ['TIBAS', 53, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 64842, 8.1, 7956, 19160, 3.38, 40.1, 7.6, 'UNIDAD SOCIAL CRISTIANA'], ['TIBAS', 62, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 64842, 8.1, 7956, 19160, 3.38, 40.1, 7.6, 'LIBERACION NACIONAL'], ['TALAMANCA', 57, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. HACINADA', 'ALFABETIZADO', 4.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 30712, 2809.9, 11, 7999, 3.83, 26.7, 5.2, 'RENOVACION COSTARRICENSE'], ['DESAMPARADOS', 29, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 208411, 118.3, 1762, 57355, 3.62, 34.2, 6.9, 'ACCION CIUDADANA'], ['MONTES DE OCA', 60, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.2, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 49132, 15.2, 3241, 16589, 2.94, 40.4, 9.9, 'UNIDAD SOCIAL CRISTIANA'], ['FLORES', 40, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'NO ALFABETIZADO', 13.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 20037, 7.0, 2879, 5751, 3.48, 28.5, 11.2, 'ACCION CIUDADANA'], ['DESAMPARADOS', 33, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.6, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 208411, 118.3, 1762, 57355, 3.62, 34.2, 6.9, 'RENOVACION COSTARRICENSE'], ['CURRIDABAT', 49, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 12.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 65206, 15.9, 4088, 19146, 3.4, 35.2, 8.5, 'LIBERACION NACIONAL'], ['MATINA', 39, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. HACINADA', 'ALFABETIZADO', 8.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 37721, 772.6, 49, 10410, 3.59, 22.6, 2.7, 'RESTAURACION NACIONAL'], ['POAS', 35, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 29199, 73.8, 395, 7906, 3.69, 22.8, 9.3, 'ACCION CIUDADANA'], ['GUATUSO', 48, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 4.8, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 15508, 758.3, 20, 4409, 3.51, 22.4, 7.9, 'INTEGRACION NACIONAL'], ['PARRITA', 59, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.0, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 16115, 478.8, 34, 4833, 3.32, 25.1, 5.9, 'UNIDAD SOCIAL CRISTIANA'], ['SAN CARLOS', 35, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 163745, 3348.0, 49, 44966, 3.62, 24.7, 7.6, 'REPUBLICANO SOCIAL CRISTIANO'], ['BARVA', 28, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.9, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 40660, 53.8, 756, 11291, 3.59, 27.4, 9.5, 'ACCION CIUDADANA'], ['ABANGARES', 31, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. HACINADA', 'ALFABETIZADO', 7.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 18039, 675.8, 27, 5311, 3.39, 26.7, 6.6, 'RESTAURACION NACIONAL'], ['POAS', 32, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 29199, 73.8, 395, 7906, 3.69, 22.8, 9.3, 'LIBERACION NACIONAL'], ['ESPARZA', 29, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 28644, 216.8, 132, 8435, 3.39, 26.6, 8.1, 'INTEGRACION NACIONAL'], ['EL GUARCO', 31, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 41793, 167.7, 249, 10831, 3.83, 23.7, 7.3, 'MOVIMIENTO LIBERTARIO'], ['PEREZ ZELEDON', 55, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 134534, 1905.5, 71, 38508, 3.48, 29.3, 7.8, 'ACCION CIUDADANA'], ['VAZQUEZ DE CORONADO', 35, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 12.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 60486, 222.2, 272, 17155, 3.52, 31.3, 8.1, 'INTEGRACION NACIONAL'], ['GUACIMO', 43, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.0, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 41266, 576.5, 72, 11797, 3.47, 27.6, 5.4, 'RESTAURACION NACIONAL'], ['OSA', 53, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 3.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 29433, 1930.2, 15, 8904, 3.3, 26.6, 8.6, 'RESTAURACION NACIONAL'], ['CARTAGO', 20, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.8, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 147898, 287.8, 514, 38618, 3.8, 28.7, 6.4, 'LIBERACION NACIONAL'], ['HEREDIA', 64, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'LIBERACION NACIONAL'], ['PUNTARENAS', 21, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.3, 'EN EDUCACION REGULAR', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 115019, 1842.3, 62, 33228, 3.44, 29.9, 4.8, 'UNIDAD SOCIAL CRISTIANA'], ['VALVERDE VEGA', 28, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 18085, 120.3, 150, 5054, 3.57, 26.6, 7.9, 'ACCION CIUDADANA'], ['EL GUARCO', 36, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 41793, 167.7, 249, 10831, 3.83, 23.7, 7.3, 'ACCION CIUDADANA'], ['PEREZ ZELEDON', 28, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.1, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 134534, 1905.5, 71, 38508, 3.48, 29.3, 7.8, 'RESTAURACION NACIONAL'], ['PARAISO', 38, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 57743, 411.9, 140, 14626, 3.94, 26.0, 4.9, 'UNIDAD SOCIAL CRISTIANA'], ['SANTA BARBARA', 62, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 36243, 53.2, 681, 10107, 3.58, 24.6, 8.0, 'UNIDAD SOCIAL CRISTIANA'], ['CARTAGO', 52, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 147898, 287.8, 514, 38618, 3.8, 28.7, 6.4, 'INTEGRACION NACIONAL'], ['ALAJUELA', 46, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.4, 'EN EDUCACION REGULAR', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'ACCION CIUDADANA'], ['GOICOECHEA', 62, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 115084, 31.5, 3653, 32520, 3.53, 37.1, 7.3, 'UNIDAD SOCIAL CRISTIANA'], ['JIMENEZ', 61, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 14669, 286.4, 51, 4113, 3.56, 25.6, 10.0, 'ACCION CIUDADANA'], ['ATENAS', 49, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 25460, 127.2, 200, 7472, 3.41, 22.9, 8.5, 'RESTAURACION NACIONAL'], ['BUENOS AIRES', 64, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 45244, 2384.2, 19, 12205, 3.7, 25.3, 6.7, 'LIBERACION NACIONAL'], ['POCOCI', 18, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 125962, 2403.5, 52, 36238, 3.46, 26.5, 6.3, 'INTEGRACION NACIONAL'], ['ALAJUELA', 26, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'INTEGRACION NACIONAL'], ['SAN CARLOS', 19, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.6, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 163745, 3348.0, 49, 44966, 3.62, 24.7, 7.6, 'UNIDAD SOCIAL CRISTIANA'], ['SAN CARLOS', 41, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. HACINADA', 'ALFABETIZADO', 5.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 163745, 3348.0, 49, 44966, 3.62, 24.7, 7.6, 'ACCION CIUDADANA'], ['DESAMPARADOS', 28, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. HACINADA', 'ALFABETIZADO', 9.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 208411, 118.3, 1762, 57355, 3.62, 34.2, 6.9, 'RESTAURACION NACIONAL'], ['TIBAS', 20, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.1, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 64842, 8.1, 7956, 19160, 3.38, 40.1, 7.6, 'ACCION CIUDADANA'], ['NARANJO', 60, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.1, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 42713, 126.6, 337, 11678, 3.65, 26.4, 7.2, 'ACCION CIUDADANA'], ['ALAJUELITA', 60, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.6, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 77603, 21.2, 3666, 19832, 3.91, 36.3, 5.8, 'NUEVA GENERACION'], ['DESAMPARADOS', 64, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 208411, 118.3, 1762, 57355, 3.62, 34.2, 6.9, 'LIBERACION NACIONAL'], ['ALAJUELA', 60, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'RENOVACION COSTARRICENSE'], ['GRECIA', 19, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.8, 'EN EDUCACION REGULAR', 'EMPLEADO', 'ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 76898, 395.7, 194, 21709, 3.53, 24.0, 7.0, 'LIBERACION NACIONAL'], ['GOLFITO', 62, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'NO ALFABETIZADO', 4.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 39150, 1754.0, 22, 11576, 3.37, 27.7, 6.6, 'INTEGRACION NACIONAL'], ['CURRIDABAT', 61, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 65206, 15.9, 4088, 19146, 3.4, 35.2, 8.5, 'UNIDAD SOCIAL CRISTIANA'], ['HEREDIA', 40, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'RESTAURACION NACIONAL'], ['SAN CARLOS', 52, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 163745, 3348.0, 49, 44966, 3.62, 24.7, 7.6, 'ACCION CIUDADANA'], ['SAN MATEO', 63, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 5.5, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 6136, 125.9, 49, 1834, 3.34, 21.5, 8.7, 'LIBERACION NACIONAL'], ['DESAMPARADOS', 31, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.6, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 208411, 118.3, 1762, 57355, 3.62, 34.2, 6.9, 'LIBERACION NACIONAL'], ['NICOYA', 47, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.0, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 50825, 1333.7, 38, 15038, 3.38, 30.7, 5.9, 'REPUBLICANO SOCIAL CRISTIANO'], ['ASERRI', 24, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.7, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 57892, 167.1, 346, 16120, 3.59, 30.0, 5.8, 'UNIDAD SOCIAL CRISTIANA'], ['ALAJUELITA', 32, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 77603, 21.2, 3666, 19832, 3.91, 36.3, 5.8, 'LIBERACION NACIONAL'], ['SAN JOSE', 38, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'ACCION CIUDADANA'], ['POCOCI', 37, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.6, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 125962, 2403.5, 52, 36238, 3.46, 26.5, 6.3, 'RESTAURACION NACIONAL'], ['SAN JOSE', 31, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'RESTAURACION NACIONAL'], ['VAZQUEZ DE CORONADO', 45, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 60486, 222.2, 272, 17155, 3.52, 31.3, 8.1, 'ACCION CIUDADANA'], ['SAN JOSE', 28, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. HACINADA', 'ALFABETIZADO', 10.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'LIBERACION NACIONAL'], ['ALAJUELITA', 20, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.7, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 77603, 21.2, 3666, 19832, 3.91, 36.3, 5.8, 'LIBERACION NACIONAL'], ['HEREDIA', 42, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 13.2, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'ACCION CIUDADANA'], ['SAN JOSE', 19, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. HACINADA', 'ALFABETIZADO', 10.3, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'FRENTE AMPLIO'], ['LIMON', 26, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 94415, 1765.8, 53, 26666, 3.52, 32.7, 4.4, 'RESTAURACION NACIONAL'], ['CARTAGO', 38, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 147898, 287.8, 514, 38618, 3.8, 28.7, 6.4, 'UNIDAD SOCIAL CRISTIANA'], ['ALAJUELA', 38, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'MOVIMIENTO LIBERTARIO'], ['SAN RAMON', 41, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.0, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 80566, 1018.6, 79, 23301, 3.44, 28.4, 8.3, 'RESTAURACION NACIONAL'], ['UPALA', 30, 'NO URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.0, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 43953, 1580.7, 28, 11518, 3.81, 24.9, 7.7, 'INTEGRACION NACIONAL'], ['PUNTARENAS', 24, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.3, 'EN EDUCACION REGULAR', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 115019, 1842.3, 62, 33228, 3.44, 29.9, 4.8, 'REPUBLICANO SOCIAL CRISTIANO'], ['ALAJUELA', 22, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.4, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'LIBERACION NACIONAL'], ['CURRIDABAT', 21, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 12.3, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 65206, 15.9, 4088, 19146, 3.4, 35.2, 8.5, 'RESTAURACION NACIONAL'], ['JIMENEZ', 40, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 14669, 286.4, 51, 4113, 3.56, 25.6, 10.0, 'LIBERACION NACIONAL'], ['ALAJUELA', 33, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. HACINADA', 'ALFABETIZADO', 11.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'INTEGRACION NACIONAL'], ['GOICOECHEA', 32, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.5, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 115084, 31.5, 3653, 32520, 3.53, 37.1, 7.3, 'INTEGRACION NACIONAL'], ['PALMARES', 30, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.5, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 34716, 38.1, 912, 9657, 3.58, 27.6, 9.5, 'LIBERACION NACIONAL'], ['SAN JOSE', 64, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.2, 'EN EDUCACION REGULAR', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'RESTAURACION NACIONAL'], ['EL GUARCO', 18, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.2, 'EN EDUCACION REGULAR', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 41793, 167.7, 249, 10831, 3.83, 23.7, 7.3, 'ACCION CIUDADANA'], ['SAN JOSE', 33, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 12.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 288054, 44.6, 6456, 81903, 3.5, 39.6, 6.9, 'INTEGRACION NACIONAL'], ['ATENAS', 56, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.3, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'NO DISCAPACITADO', 25460, 127.2, 200, 7472, 3.41, 22.9, 8.5, 'UNIDAD SOCIAL CRISTIANA'], ['PEREZ ZELEDON', 48, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 6.1, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 134534, 1905.5, 71, 38508, 3.48, 29.3, 7.8, 'RESTAURACION NACIONAL'], ['ASERRI', 38, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 57892, 167.1, 346, 16120, 3.59, 30.0, 5.8, 'UNIDAD SOCIAL CRISTIANA'], ['ALAJUELITA', 28, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 10.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 77603, 21.2, 3666, 19832, 3.91, 36.3, 5.8, 'INTEGRACION NACIONAL'], ['ALAJUELA', 52, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.4, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'UNIDAD SOCIAL CRISTIANA'], ['OSA', 64, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 3.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 29433, 1930.2, 15, 8904, 3.3, 26.6, 8.6, 'RESTAURACION NACIONAL'], ['HEREDIA', 32, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 9.2, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'DISCAPACITADO', 123616, 282.6, 437, 35216, 3.5, 34.9, 9.2, 'RESTAURACION NACIONAL'], ['BARVA', 61, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 8.8, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 40660, 53.8, 756, 11291, 3.59, 27.4, 9.5, 'INTEGRACION NACIONAL'], ['ALAJUELA', 40, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 11.4, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'EXTRANJERO', 'DISCAPACITADO', 254886, 388.4, 656, 72031, 3.49, 28.2, 7.6, 'RESTAURACION NACIONAL'], ['TIBAS', 22, 'URBANO', 'M', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 13.1, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 64842, 8.1, 7956, 19160, 3.38, 40.1, 7.6, 'LIBERACION NACIONAL'], ['BUENOS AIRES', 48, 'NO URBANO', 'F', 'NO DEPENDIENTE', 'V. MAL ESTADO', 'V. NO HACINADA', 'ALFABETIZADO', 7.7, 'EDUCACION REGULAR INACTIVA', 'DESEMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 45244, 2384.2, 19, 12205, 3.7, 25.3, 6.7, 'RESTAURACION NACIONAL'], ['SANTO DOMINGO', 50, 'URBANO', 'F', 'NO DEPENDIENTE', 'V. BUEN ESTADO', 'V. HACINADA', 'ALFABETIZADO', 7.2, 'EDUCACION REGULAR INACTIVA', 'EMPLEADO', 'NO ASEGURADO', 'NO EXTRANJERO', 'NO DISCAPACITADO', 40072, 24.8, 1613, 11496, 3.48, 30.4, 10.1, 'UNIDAD SOCIAL CRISTIANA']]
 header3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'nn', 'o', 'p', 'q', 'r', 's', 't', 'u']
 
+muestra_test1 = muestra_validacion3
+header4 = header3
 
 # create array that indicates whether each attribute is a numerical value or not
-attr_types = [False, True, True, False, False]
+attr_types = [False] * len(header3)
 
 
 def main():
@@ -1220,35 +494,36 @@ def main():
 
     post_prune_accuracy = 100 * prune_tree(root, root, validateset, best_score)
     print("Post-pruning score on validation set: " + str(post_prune_accuracy) + "%")
-    """
-    if ("-t" in args):
-        datatest = args[args.index("-t") + 1]
-        testset = data(classifier)
-        read_data(testset, datatest, datatypes)
-        for a in range(len(dataset.attributes)):
-            if testset.attributes[a] == testset.classifier:
-                testset.class_index = a
-            else:
-                testset.class_index = range(len(testset.attributes))[-1]
-        print("Testing model on " + str(datatest))
-        for example in testset.examples:
-            example[testset.class_index] = '0'
-        testset.examples[0][testset.class_index] = '1'
-        testset.examples[1][testset.class_index] = '1'
-        testset.examples[2][testset.class_index] = '?'
-        preprocess2(testset)
-        b = open('results.csv', 'w')
-        a = csv.writer(b)
-        for example in testset.examples:
-            example[testset.class_index] = test_example(example, root, testset.class_index)
-        saveset = testset
-        saveset.examples = [saveset.attributes] + saveset.examples
-        a.writerows(saveset.examples)
-        b.close()
-        print("Testing complete. Results outputted to results.csv")
 
-    """
+    print("Testing tree...")
 
+    testset = data(classifier)
+    testset.examples = muestra_test1
+    testset.attributes = header4
+    testset.attr_types = attr_types
+
+    for a in range(len(testset.attributes)):
+        if testset.attributes[a] == testset.classifier:
+            testset.class_index = a
+        else:
+            testset.class_index = range(len(testset.attributes))[-1]
+    """
+    for example in testset.examples:
+        example[testset.class_index] = '0'
+    testset.examples[0][testset.class_index] = '1'
+    testset.examples[1][testset.class_index] = '1'
+    testset.examples[2][testset.class_index] = '?'
+    preprocess2(testset)
+    b = open('results.csv', 'w')
+    a = csv.writer(b)
+    for example in testset.examples:
+        example[testset.class_index] = test_example(example, root, testset.class_index)
+    saveset = testset
+    saveset.examples = [saveset.attributes] + saveset.examples
+    a.writerows(saveset.examples)
+    b.close()
+    print("Testing complete. Results outputted to results.csv")
+    """
 
 if __name__ == "__main__":
     main()
