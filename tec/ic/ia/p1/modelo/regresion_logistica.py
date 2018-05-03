@@ -90,6 +90,25 @@ def rl_validar(model, validation_data, prefix):
     return results['accuracy'], results['average_loss']
 
 
+def rl_validar_alt(model, validation_data, prefix):
+
+    predictions = rl_predict(model, validation_data, prefix)
+
+    if __predicting == 'r1':
+        dicc = id_to_partidos_r1()
+        true_vals = validation_data['VOTO_R1'].values.tolist()
+    else:
+        dicc = id_to_partidos_r2()
+        true_vals = validation_data['VOTO_R2'].values.tolist()
+
+    rights = 0
+    for pred, val in zip(predictions, true_vals):
+        if pred == dicc[val]:
+            rights += 1
+
+    return rights / len(predictions)
+
+
 def rl_predict(model, df_data, prefix):
 
     if __predicting == 'r2_with_r1':
@@ -104,13 +123,13 @@ def rl_predict(model, df_data, prefix):
 
     predictions = model.predict(input_fn=lambda: __input_fn(df_data, prefix))
 
-    template = 'Prediction is "{}" ({:.1f}%)'
+    pred_labels = list()
 
     for pred_dict in predictions:
         class_id = pred_dict['class_ids'][0]
-        probability = pred_dict['probabilities'][class_id]
+        pred_labels.append(classes[class_id])
 
-        print(template.format(classes[class_id], 100 * probability))
+    return pred_labels
 
 
 def rl_normalize(data_list, normalization):
@@ -271,20 +290,18 @@ def run_rl(sample_size=3000, normalization='os', test_percent=0.2,
         _prefix = prefix + '_' + str(v_index)
         #
         # instanciar el modelo
-        model = regresion_logistica(_prefix, regularization, predicting)
+        models.append(regresion_logistica(_prefix, regularization, predicting))
         v_data, t_subset = agrupar(v_index, k_groups)
         t_subset = DataFrame(t_subset, columns=data_columns)
         v_data = DataFrame(v_data, columns=data_columns)
-        rl_entrenar(model, t_subset, _prefix)
-        acc, avg_loss = rl_validar(model, v_data, _prefix)
+        rl_entrenar(models[v_index], t_subset, _prefix)
+        acc = rl_validar_alt(models[v_index], v_data, _prefix)
         accuracies.append(acc)
-        avg_losses.append(avg_loss)
         print('Subset ' + str(v_index) + ' completo.')
 
     print('Precisión y pérdida promedio de cada entrenamiento:')
     for i in range(__k_fold_amount):
-        print('Subset ' + str(i) + ' -> Precisión: ' + str(accuracies[i])
-              + ' Pérdida promedio: ' + str(avg_losses[i]))
+        print('Subset ' + str(i) + ' -> Precisión: ' + str(accuracies[i]))
 
 
 run_rl(1000, predicting='r2_with_r1')

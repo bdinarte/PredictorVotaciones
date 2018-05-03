@@ -200,11 +200,27 @@ def nn_predict(model, df_data):
         label = num_to_label[label_id]
         _predictions.append('{}'.format(label))
 
-    return Counter(_predictions)
+    return _predictions
 
 
-from collections import Counter
-# TODO: remove counter and replace with probably list
+def nn_validar_alt(model, validation_data, prefix):
+
+    predictions = nn_predict(model, validation_data)
+
+    if __predicting == 'r1':
+        dicc = id_to_partidos_r1()
+        true_vals = validation_data['VOTO_R1'].values.tolist()
+    else:
+        dicc = id_to_partidos_r2()
+        true_vals = validation_data['VOTO_R2'].values.tolist()
+
+    rights = 0
+    for pred, val in zip(predictions, true_vals):
+        if pred == dicc[val]:
+            rights += 1
+
+    print('')
+    return rights / len(predictions)
 
 
 def nn_normalize(data_list, normalization):
@@ -355,10 +371,12 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
         t_subset = DataFrame(t_subset, columns=data_columns[1:])
         v_data = DataFrame(v_data, columns=data_columns[1:])
         nn_entrenar(models[v_index], t_subset, _prefix)
-        accuracies.append(nn_validar(models[v_index], v_data, _prefix))
+        accuracies.append(nn_validar_alt(models[v_index], v_data, _prefix))
         print('Subset ' + str(v_index) + ' completo.')
 
     print('Precisión de cada entrenamiento:')
     for i in range(__k_fold_amount):
         print('Subset ' + str(i) + ': ' + str(accuracies[i]))
 
+
+run_nn(sample_size=1000, activation_out='softmax', predicting='r2_with_r1')
