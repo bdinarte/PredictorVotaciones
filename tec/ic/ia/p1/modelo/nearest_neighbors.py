@@ -9,11 +9,13 @@ Clasificador K-Nearest-Neightbor utilizando kd-Tree
     ♦ One Hot Encoding para atributos categóricos
     ♦ Normalización para que todos los atributos tengan la misma escala
 
+    ♣ Se puede ver una demostración de la estructura del árbol (con
+    datos triviales) ejecutando este archivo como el principal:
+
 NOTAS:
 
     ♣ Resulta mejor cuando hay más ejemplos que dimensiones
     ♣ Para clasificar se usa el voto por mayoría de los k vecinos más cercanos
-    ♣ TODO: Encontrar el k más óptimo con cross-validation
 """
 
 import os
@@ -52,27 +54,19 @@ DERECHA = 'F. DERECHA'
 def kdtree(muestras, max_profundidad=50):
     """
     Crea el kd-Tree como un diccionario anidado.
-    Crear el árbol es equivalente a entrenear.
-    En cada nodo se parten los matriz con base en el atributo que más varia.
-
-    Se puede ver una demostración de la estructura del árbol (con matriz
-    triviales) ejecutando este archivo como el principal:
-        >> python nearest_neighbors.py
+    En cada nodo se parten los datos con base en el atributo que más varia.
 
     :param muestras: Tupla donde:
         ♣ [0] = Matriz N x M con valores númericos
         ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
+        ♣ NOTA: Ambos deben ser del tipo np.array
 
-    NOTA: Ambos deben ser del tipo np.array
-
-    :param max_profundidad: Representa la cantidad de niveles máx del árbol
-    Es para hacer menos exhaustiva la búsqueda a través de los nodos
+    :param max_profundidad: Representa la cantidad de niveles máx del árbol.
+    Esto es porque, entre más nodos existen, más posibilidad hay de que
+    el vecino más cercano no esté del lado del árbol donde se está buscando.
 
     :return: kdtree_aux(matriz, atributos_no_usados)
     """
-
-    if max_profundidad is 0:
-        return None
 
     matriz = muestras[0]
     tamanho_datos = len(matriz)
@@ -99,9 +93,10 @@ def kdtree_aux(muestras, atribs_no_usados, max_profundidad):
     :param muestras: Tupla donde:
         ♣ [0] = Matriz N x M con valores númericos
         ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
+        ♣ NOTA: Ambos deben ser del tipo np.array
 
     :param atribs_no_usados: np.array con elementos booleanos.
-    Un True representa que el atributo en esa misma posición en la matriz
+    Un True representa que el atributo en esa misma posición de la matriz
     no ha sido utilizado para bifurcar un nodo.
 
     :param max_profundidad: Representa la cantidad de niveles máx del árbol
@@ -137,17 +132,17 @@ def kdtree_aux(muestras, atribs_no_usados, max_profundidad):
         # Se marca el atributo seleccionado como usado
         atribs_no_usados[atributo] = False
 
-        # Se ordenan con base al atributo seleccionado
+        # Se ordenan con base en el atributo seleccionado
         muestras = ordenar(muestras, atributo)
 
-        # Se dividen las muestras con base al atributo seleccionado
+        # Se dividen las muestras con base en el atributo seleccionado
         nodo = bifurcar(muestras, atributo)
 
-        nodo[IZQUIERDA] = \
-            kdtree_aux(nodo[IZQUIERDA], atribs_no_usados, max_profundidad - 1)
+        nodo[IZQUIERDA] = kdtree_aux(nodo[IZQUIERDA],
+                                     atribs_no_usados, max_profundidad - 1)
 
-        nodo[DERECHA] = \
-            kdtree_aux(nodo[DERECHA], atribs_no_usados, max_profundidad - 1)
+        nodo[DERECHA] = kdtree_aux(nodo[DERECHA],
+                                   atribs_no_usados, max_profundidad - 1)
 
         return nodo
 
@@ -157,9 +152,12 @@ def kdtree_aux(muestras, atribs_no_usados, max_profundidad):
 def knn(arbol, muestra, k_vecinos):
     """
     Busca los `k_vecinos` más cercanos y sus distancias
+
     :param arbol: Diccionario kd-Tree previamente creado
+
     :param muestra: np.array con la misma estructura que tienen
-    las filas de la matriz que se utilizaron para crear el kd-tree
+    las filas de la matriz que se utilizó para crear el kd-tree
+
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
     que se tuvieron que recorrer antes de llegar a la hoja (sin incluirla)
 
@@ -167,8 +165,6 @@ def knn(arbol, muestra, k_vecinos):
         ♣ Matriz tamaño k x M, donde k_i representa un vecino
         ♣ Vector tamaño k con la etiqueta o clase de cada vecino
         ♣ Vector tamaño k con las distancias entre la consulta y los vecinos
-        ♣ Matriz tamaño R x M, donde R es la cantidad de nodos recorridos
-        para llegar hasta la hoja (ésta no se incluye)
     """
 
     vecinos = []
@@ -187,7 +183,7 @@ def knn(arbol, muestra, k_vecinos):
         v_atrib_consulta = muestra[atributo]
         v_atrib_actual = nodo_actual[V_ATRIBUTO]
 
-        # Siempre que queda dos elementos, uno se queda en el nodo
+        # Siempre que quedan dos vectores, uno se queda en el nodo
         # y el otro en la izquierda, por lo que, siempre se cumple que
         # si el hijo de la derecha es None el hijo izquierdo no lo es
         if nodo_actual[DERECHA] is None:
@@ -202,15 +198,19 @@ def knn(arbol, muestra, k_vecinos):
                 test_izq = nodo_actual[IZQUIERDA]
                 test_der = nodo_actual[DERECHA]
 
+                # Si es una hoja se extrae el elemento 0 de la tupla
+                # que es el vector, si es un nodo selecciona la mediana
                 test_izq = test_izq[MEDIANA if type(test_izq) == dict else 0]
                 test_der = test_der[MEDIANA if type(test_der) == dict else 0]
 
-                dist_izq = distancia(muestra[atributo], test_izq)
-                dist_der = distancia(muestra[atributo], test_der)
+                # Se testea la distancia entre la consulta y los hijos
+                # con base en el atributo que había sido usada para bifurcar
+                dist_izq = distancia(v_atrib_consulta, test_izq)
+                dist_der = distancia(v_atrib_consulta, test_der)
 
                 # Si la distancia entre la muestra y el hijo de la
                 # izquierda es menor que el de la derecha, se resta un 1
-                # para que funcione en el siguiente `if`
+                # para que el `nodo_actual` se actualice en el siguiente `if`
                 v_atrib_consulta += -1 if dist_izq <= dist_der else 1
 
             if v_atrib_consulta < v_atrib_actual:
@@ -234,13 +234,15 @@ def knn(arbol, muestra, k_vecinos):
 def predecir(arbol, muestra, k_vecinos=5):
     """
     Predice una etiqueta con base en una consulta.
+
     :param arbol: Diccionario kd-Tree previamente creado
     :param muestra: np.array con la misma estructura que tienen
-    las filas matriz que se utilizaron para crear el kd-tree
+    las filas de la matriz que se utilizó para crear el kd-tree
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
-    :return: etiqueta
+    :return: etiqueta predecida para la muestra
     """
 
+    # Etiquetas de los vecinos más cercanos
     etiquetas = knn(arbol, muestra, k_vecinos)[1]
 
     # Diccionario (etiqueta, freacuencia)
@@ -253,7 +255,7 @@ def predecir(arbol, muestra, k_vecinos=5):
         else:
             votos[etiquetas[i]] = 1
 
-    # Retorna la etiqque de quién tenga más votos
+    # Retorna la etiqueta de quién tenga más votos
     return max(votos, key=votos.get)
 
 
@@ -265,7 +267,7 @@ def predecir_conjunto(arbol, muestras, k_vecinos=5):
     :param arbol: Diccionario kd-Tree previamente creado
     :param muestras: matriz donde cada fila es una muesrta a predecir
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
-    :return: etiquetas
+    :return: etiquetas predecidas para un conjunto de muestras
     """
 
     return [predecir(arbol, muestra, k_vecinos) for muestra in muestras]
@@ -309,6 +311,7 @@ def seleccionar(matriz, atribs_no_usados):
     datos_no_usados = matriz[:, atribs_no_usados]
     varianzas[atribs_no_usados] = np.var(datos_no_usados, axis=0)
 
+    # Se retorna la posición del atributo con mayor varianza
     return np.argmax(varianzas)
 
 # -----------------------------------------------------------------------------
@@ -316,15 +319,15 @@ def seleccionar(matriz, atribs_no_usados):
 
 def ordenar(muestras, columna):
     """
-    Ordena de menor a mayor los matriz según los valores
-    de una sola columna de la matriz.
+    Ordena de menor a mayor los elementos de la matriz según los
+    valores de una sola columna .
 
     :param muestras: Tupla donde:
         ♣ [0] = Matriz N x M con valores númericos
         ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
 
     :param columna: Indíce de la columna
-    :return: Los mismos matriz y etiquetas de entrada pero ordenados
+    :return: La misma matriz y etiquetas de entrada pero ordenados
 
     Ejemplo:
     >>> matriz = np.array([[  1, 10,   3],
@@ -333,13 +336,12 @@ def ordenar(muestras, columna):
     >>> etiquetas = np.array(['ETIQ_1',
     ...                       'ETIQ_2',
     ...                       'ETIQ_3'])
-    >>> muestras = (matriz, etiquetas)
-    >>> muestras = ordenar(muestras, columna=1)
-    >>> muestras[0] # Matriz
+    >>> matriz, etiquetas = ordenar((matriz, etiquetas), columna=1)
+    >>> matriz
     array([[123,   9, 120],
            [  1,  10,   3],
            [ 34,  56,  43]])
-    >>> muestras[1] # Etiquetas
+    >>> etiquetas
     array(['ETIQ_3', 'ETIQ_1', 'ETIQ_2'], dtype='<U6')
     """
 
@@ -356,13 +358,13 @@ def ordenar(muestras, columna):
 
 def bifurcar(muestras, atributo):
     """
-    Divide los matriz en dos usando un atributo como criterio.
+    Divide la matriz en dos usando un atributo como criterio.
 
     :param muestras: Tupla donde:
         ♣ [0] = Matriz N x M con valores númericos
         ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
 
-    :param atributo: Indice de una columna
+    :param atributo: Indice de una columna que se usará para bifurcar
 
     :return: Diccionario con la siguiente información:
         ATRIBUTO: índice de la columna usada para bifurcar
@@ -384,8 +386,7 @@ def bifurcar(muestras, atributo):
     ...                       'ETIQ_3',
     ...                       'ETIQ_4',
     ...                       'ETIQ_5'])
-    >>> muestras = (matriz, etiquetas)
-    >>> resultado = bifurcar(muestras, atributo)
+    >>> resultado = bifurcar((matriz, etiquetas), atributo)
     >>> resultado[MEDIANA]
     array([16, 44, 27])
     >>> resultado[ETIQUETA]
@@ -408,10 +409,9 @@ def bifurcar(muestras, atributo):
     etiquetas = muestras[1]
     tamanho_datos = len(matriz)
 
-    # Si la cantidad de filas de las matriz es par, la
-    # la mediana es la posición inferior más cercana al centro.
-    # La mediana se queda en el nodo en vez de ir hacia uno de
-    # sus hijos.
+    # Si la cantidad de filas de las matriz es par, la mediana es
+    # la posición inferior más cercana al centro. La mediana se queda
+    # el nodo en vez de ir hacia uno de sus hijos.
     mitad = int(tamanho_datos // 2)
     mediana = matriz[mitad]
 
@@ -516,7 +516,7 @@ def normalizar(matriz, menor=0.0, mayor=1.0):
     :param matriz: Matriz N x M con valores númericos
     :param menor: Número más bajo que tendrá la matriz luego de normalizar
     :param mayor: Número más alto que tendrá la matriz luego de normalizar
-    :return: Los mismos matriz de entrada pero normalizados
+    :return: La misma matriz de entrada pero normalizados
 
     Ejemplo:
     >>> matriz = np.array([[250, 0.15, 12],
@@ -539,20 +539,19 @@ def normalizar(matriz, menor=0.0, mayor=1.0):
 
 
 def preprocesar(matriz, columnas, columnas_c):
-
     """
     A partir de la matriz de muestrss, se convierten los atributos
     categóricos a númericos; seguidamente se normaliza la matriz.
 
-    NOTA: Se asume que las columnas_csv que no deben ser consideredas ya han
+    NOTA: Se asume que las columnas que no deben ser consideredas ya han
     sido borradas. En caso el caso particular de las elecciones, se asume
     que la columna 'VOTO_R1' ya ha sido borrada cuando se solicita realizar
     predicciones de 'VOTO_R2' sin utilizar 'VOTO_R1.
 
     :param matriz: Matriz donde cada fila es una muestra
     :param columnas: Nombres de las columnas_csv de la matriz
-    :param columnas_c: Lista de los nombres de las columnas_csv categoricas a
-    las que se les debe aplicar el algortimo ONE HOT ENCODING para convertirlas
+    :param columnas_c: Lista de los nombres de las columnas_csv
+    categoricas a las que se les debe aplicar el algortimo ONE HOT ENCODING
 
     :return: Tupla con la siguiente información:
         ♣ [0] = Matriz N x M con valores númericos
@@ -585,7 +584,7 @@ def preprocesar(matriz, columnas, columnas_c):
     columnas = columnas[:len(columnas)-1]
 
     # Se aplica One Hot Encoding a las columnas_csv categóricas
-    # Por facilidad se convierte a un Dataframe y usar
+    # Por facilidad se convierte a un Dataframe
     df = pd.DataFrame(matriz, columns=columnas)
     df = pd.get_dummies(df, columns=columnas_c)
 
@@ -600,7 +599,21 @@ def preprocesar(matriz, columnas, columnas_c):
 
 
 def preprocesar_ronda(datos, ronda):
+    """
+    Función especifica para el modelo de los votantes.
+        ♣ Se eliminan las columnas apropiadas según la ronda
+        ♣ Se aplica One Hot Encoding a las columnas que lo requierenr
+        ♣ Se normalizan los datos
 
+    :param datos: Generados por el simulador de votantes
+    :param ronda: Número de ronda. Puede ser 1, 2 o 3
+
+    :return: Tupla con la siguiente información:
+        ♣ [0] = Matriz N x M con valores númericos y normalizados
+        ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
+    """
+
+    # Columnas a las que se les debe aplicar One Hot Encoding
     columnas_c = [columnas_csv[0]]
 
     # Ronda #1: No se necesita la columna r2
@@ -615,6 +628,8 @@ def preprocesar_ronda(datos, ronda):
         columnas_r2 = np.delete(columnas_csv, 21)
         return preprocesar(datos_r2, columnas_r2, columnas_c)
 
+    # Ronda #2 usando ronda #1
+    # La columna de la ronda #1 pasa a ser categorica
     else:
         columnas_c.append(columnas_csv[21])
         return preprocesar(datos, columnas_csv, columnas_c)
@@ -623,6 +638,19 @@ def preprocesar_ronda(datos, ronda):
 
 
 def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
+    """
+    Los datos se dividen en `k_segmentos`. Se itera k veces el entrenamiento.
+    Se elige 1/K para validación en cada iteración. En cada iteración se
+    obtiene la precision. Se obtiene el promedio de precisiones junto con
+    cada una de las predicciones relizadas.
+
+    :param datos: Matriz de entrenamien N x M
+    :param etiquetas: Vector tamaño N
+    :param k_vecinos: Cantidad máxima de vecinos más cercanos
+    :param k_segmentos: Cantidad de segmentos en los que se deben dividir
+    los datos. Representa también la cantidad de iteraciones.
+    :return: (Precision, Predicciones)
+    """
 
     precisiones = list()
     predicciones = list()
@@ -636,17 +664,22 @@ def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
 
         ind_validacion, ind_entrenamiento = agrupar(k, segmentos)
 
+        # Validadción (para el final)
         datos_validacion = datos[ind_validacion]
         etiqs_validacion = etiquetas[ind_validacion]
 
+        # Entrenamiento
         datos_entrenamiento = datos[ind_entrenamiento]
         etiqs_entrenamiento = etiquetas[ind_entrenamiento]
 
+        # Se entrena el sistema con loa datos y etiquetas de entrenamiento
         arbol = kdtree((datos_entrenamiento, etiqs_entrenamiento))
 
+        # Etiquetas obtenidas del conjunto de validación
         etiqs_predics = predecir_conjunto(arbol, datos_validacion, k_vecinos)
         predicciones += etiqs_predics
 
+        # Cantidad de etiquetas predecidas correctamente vs predicciones
         precisiones.append(accuracy_score(etiqs_validacion, etiqs_predics))
 
     return np.mean(precisiones), predicciones
@@ -657,6 +690,7 @@ def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
 def analisis_knn(args, datos):
 
     print("K Nearest Neighbors")
+    print("Usando k -> " + str(args.k[0]))
 
     # Para agregar las 4 columnas solicitadas
     salida = np.concatenate((datos, np.zeros((datos.shape[0], 4))), axis=1)
@@ -688,6 +722,7 @@ def analisis_knn(args, datos):
 
         predicciones += predics_ronda
 
+        # Predicciones sobre los datos de pruebas
         clasificador = kdtree((datos_entrenamiento, etiqs_entrenamiento))
         predics = predecir_conjunto(clasificador, datos_pruebas, k_vecinos)
         predicciones = predics + predicciones
@@ -697,6 +732,8 @@ def analisis_knn(args, datos):
         print("Precisión ronda {} -> {}".format(n_ronda, prec_ronda))
 
     salida = pd.DataFrame(salida, columns=columnas_salida)
+
+    # Se guarda el archivo con las 4 columnas de la especificación
     nombre_salida = os.path.join("archivos", prefijo_archivos + "_1.csv")
     salida.to_csv(nombre_salida)
 
@@ -740,22 +777,20 @@ def ejemplo_kdtree():
                    'ETIQ_11'])
 
     tree = kdtree((dt, et), max_profundidad=5)
-    print("Kd-Tree")
     pprint(tree)
 
     consulta = np.array([18, 55, 30])
-    print("Consulta con k = 2: " + str(consulta))
+    print("Consulta con k -> 2 ")
+    print(consulta)
 
-    # Vecinos, etiquetas, distancias, nodos_recorridos
+    # Vecinos, etiquetas, distancias
     v, e, d = knn(tree, consulta, k_vecinos=5)
-
     print("K vecinos más cercanos: \n" + str(v))
     print("Etiquetas de los K vecinos: \n" + str(e))
     print("Distancias de los k vecinos: \n" + str(d))
 
-    print("Realizando predicción")
-    x = predecir(tree, consulta, k_vecinos=5)
-    pprint(x)
+    print("Realizando predicción de prueba")
+    print(predecir(tree, consulta, k_vecinos=5))
 
 
 # -----------------------------------------------------------------------------

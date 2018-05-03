@@ -34,6 +34,8 @@ columnas_csv = np.array([
 
 # -----------------------------------------------------------------------------
 
+# Columnas adicionales que se debe agregar
+
 columnas_salida = np.append(columnas_csv, [
     'ES_ENTRENAMIENTO', 'PREDICCION_R1',
     'PREDICCION_R2', 'PREDICCION_R2_CON_R1'])
