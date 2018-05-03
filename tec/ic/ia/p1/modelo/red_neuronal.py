@@ -43,7 +43,6 @@ __learning_rate = 0.03
 __k_fold_amount = 4
 __display_console_info = False
 
-
 # ------------------------ Funciones públicas ---------------------------------
 
 
@@ -205,6 +204,7 @@ def nn_predict(model, df_data):
 
 
 from collections import Counter
+# TODO: remove counter and replace with probably list
 
 
 def nn_normalize(data_list, normalization):
@@ -316,7 +316,7 @@ def __save_data_file(df, prefix):
     return filename
 
 
-def run_nn(sample_size=10000, normalization='os', test_percent=0.2, layers=3,
+def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
            units_per_layer=5, activation_f='relu', activation_out='',
            predicting='r1', prefix='nn_', provincia=''):
     #
@@ -356,6 +356,7 @@ def run_nn(sample_size=10000, normalization='os', test_percent=0.2, layers=3,
         v_data = DataFrame(v_data, columns=data_columns[1:])
         nn_entrenar(models[v_index], t_subset, _prefix)
         accuracies.append(nn_validar(models[v_index], v_data, _prefix))
+        print('Subset ' + str(v_index) + ' completo.')
 
     print('Precisión de cada entrenamiento:')
     for i in range(__k_fold_amount):
