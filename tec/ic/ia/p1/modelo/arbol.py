@@ -6,7 +6,7 @@ from collections import Counter
 
 # -------------------------------------------------------------------------------
 
-class data():
+class data:
     """
     Clase que contendra el conjunto de datos(muestras, atributos, la meta, etc)
     que seran utlizadas para generar el arbol
@@ -59,12 +59,12 @@ def preprocess2(dataset):
         attr_modes[attr_index] = mode_012
 
         for example in dataset.examples:
-            if (example[attr_index] == '?'):
-                if (example[dataset.class_index] == 'PAC'):
+            if example[attr_index] == '?':
+                if example[dataset.class_index] == 'PAC':
                     example[attr_index] = attr_modes[attr_index][0]
-                elif (example[dataset.class_index] == 'PLN'):
+                elif example[dataset.class_index] == 'PLN':
                     example[attr_index] = attr_modes[attr_index][1]
-                elif (example[dataset.class_index] == 'PUSC'):
+                elif example[dataset.class_index] == 'PUSC':
                     example[attr_index] = attr_modes[attr_index][2]
                 else:
                     example[attr_index] = class_mode
@@ -78,7 +78,7 @@ def preprocess2(dataset):
 
 # -------------------------------------------------------------------------------
 
-class treeNode():
+class treeNode:
     def __init__(self, is_leaf, classification, attr_split_index, attr_split_value, parent, upper_child, lower_child,
                  height):
         self.is_leaf = True
@@ -96,7 +96,7 @@ class treeNode():
 
 def compute_tree(dataset, parent_node, classifier):
     node = treeNode(True, None, None, None, parent_node, None, None, 0)
-    if (parent_node == None):
+    if parent_node is None:
         node.height = 0
     else:
         node.height = node.parent.height + 1
@@ -127,13 +127,13 @@ def compute_tree(dataset, parent_node, classifier):
     dataset_entropy = calc_dataset_entropy(dataset, classifier)
     for attr_index in range(len(dataset.examples[0])):
 
-        if (dataset.attributes[attr_index] != classifier):
+        if dataset.attributes[attr_index] != classifier:
             local_max_gain = 0
             local_split_val = None
             attr_value_list = [example[attr_index] for example in
                                dataset.examples]  # these are the values we can split on, now we must find the best one
             attr_value_list = list(set(attr_value_list))  # remove duplicates from list of all attribute values
-            if (len(attr_value_list) > 100):
+            if len(attr_value_list) > 100:
                 attr_value_list = sorted(attr_value_list)
                 total = len(attr_value_list)
                 ten_percentile = int(total / 10)
@@ -160,7 +160,7 @@ def compute_tree(dataset, parent_node, classifier):
     # attr_to_split is now the best attribute according to our gain metric
     if split_val is None or attr_to_split is None:
         print("Something went wrong. Couldn't find an attribute to split on or a split value.")
-    elif (max_gain <= min_gain or node.height > 20):
+    elif max_gain <= min_gain or node.height > 20:
 
         node.is_leaf = True
         node.classification = classify_leaf(dataset, classifier)
@@ -178,10 +178,10 @@ def compute_tree(dataset, parent_node, classifier):
     upper_dataset.attr_types = dataset.attr_types
     lower_dataset.attr_types = dataset.attr_types
     for example in dataset.examples:
-        if (attr_to_split is not None and split_val is not None):
-            if (attr_to_split is not None and example[attr_to_split] >= split_val):
+        if attr_to_split is not None and split_val is not None:
+            if attr_to_split is not None and example[attr_to_split] >= split_val:
                 upper_dataset.examples.append(example)
-            elif (attr_to_split is not None):
+            elif attr_to_split is not None:
                 lower_dataset.examples.append(example)
 
     node.upper_child = compute_tree(upper_dataset, node, classifier)
@@ -196,7 +196,7 @@ def classify_leaf(dataset, classifier):
     ones = one_count(dataset.examples, dataset.attributes, classifier)
     total = len(dataset.examples)
     zeroes = total - ones
-    if (ones >= zeroes):
+    if ones >= zeroes:
         return 1
     else:
         return 0
@@ -206,14 +206,14 @@ def classify_leaf(dataset, classifier):
 
 def calc_dataset_entropy(dataset, classifier):
     ones = one_count(dataset.examples, dataset.attributes, classifier)
-    total_examples = len(dataset.examples);
+    total_examples = len(dataset.examples)
 
     entropy = 0
     p = ones / total_examples
-    if (p != 0):
+    if p != 0:
         entropy += p * math.log(p, 2)
     p = (total_examples - ones) / total_examples
-    if (p != 0):
+    if p != 0:
         entropy += p * math.log(p, 2)
 
     entropy = -entropy
@@ -225,7 +225,7 @@ def calc_dataset_entropy(dataset, classifier):
 def calc_gain(dataset, entropy, val, attr_index):
     classifier = dataset.attributes[attr_index]
     attr_entropy = 0
-    total_examples = len(dataset.examples);
+    total_examples = len(dataset.examples)
     gain_upper_dataset = data(classifier)
     gain_lower_dataset = data(classifier)
     gain_upper_dataset.attributes = dataset.attributes
@@ -233,13 +233,14 @@ def calc_gain(dataset, entropy, val, attr_index):
     gain_upper_dataset.attr_types = dataset.attr_types
     gain_lower_dataset.attr_types = dataset.attr_types
     for example in dataset.examples:
-        if (example[attr_index] >= val):
+        if example[attr_index] >= val:
             gain_upper_dataset.examples.append(example)
-        elif (example[attr_index] < val):
+        elif example[attr_index] < val:
             gain_lower_dataset.examples.append(example)
 
     if (len(gain_upper_dataset.examples) == 0 or len(
-            gain_lower_dataset.examples) == 0):  # Splitting didn't actually split (we tried to split on the max or min of the attribute's range)
+            gain_lower_dataset.examples) == 0):
+        # Splitting didn't actually split (we tried to split on the max or min of the attribute's range)
         return -1
 
     attr_entropy += calc_dataset_entropy(gain_upper_dataset, classifier) * len(
@@ -289,19 +290,19 @@ def one_count(instances, attributes, classifier):
 
 def prune_tree(root, node, dataset, best_score):
     # if node is a leaf
-    if (node.is_leaf == True):
+    if node.is_leaf:
         # get its classification
         classification = node.classification
         # run validate_tree on a tree with the nodes parent as a leaf with its classification
         node.parent.is_leaf = True
         node.parent.classification = node.classification
-        if (node.height < 20):
+        if node.height < 20:
             new_score = validate_tree(root, dataset)
         else:
             new_score = 0
 
         # if its better, change it
-        if (new_score >= best_score):
+        if new_score >= best_score:
             return new_score
         else:
             node.parent.is_leaf = False
@@ -312,12 +313,12 @@ def prune_tree(root, node, dataset, best_score):
         # prune tree(node.upper_child)
         new_score = prune_tree(root, node.upper_child, dataset, best_score)
         # if its now a leaf, return
-        if (node.is_leaf == True):
+        if node.is_leaf:
             return new_score
         # prune tree(node.lower_child)
         new_score = prune_tree(root, node.lower_child, dataset, new_score)
         # if its now a leaf, return
-        if (node.is_leaf == True):
+        if node.is_leaf:
             return new_score
 
         return new_score
@@ -337,7 +338,7 @@ def validate_tree(node, dataset):
 # -------------------------------------------------------------------------------
 
 def validate_example(node, example):
-    if (node.is_leaf == True):
+    if node.is_leaf:
         projected = node.classification
         actual = example[-1]
         if projected == actual:
@@ -345,7 +346,7 @@ def validate_example(node, example):
         else:
             return 0
     value = example[node.attr_split_index]
-    if (value >= node.attr_split_value):
+    if value >= node.attr_split_value:
         return validate_example(node.upper_child, example)
     else:
         return validate_example(node.lower_child, example)
@@ -354,10 +355,10 @@ def validate_example(node, example):
 # -------------------------------------------------------------------------------
 
 def test_example(example, node, class_index):
-    if (node.is_leaf == True):
+    if node.is_leaf:
         return node.classification
     else:
-        if (example[node.attr_split_index] >= node.attr_split_value):
+        if example[node.attr_split_index] >= node.attr_split_value:
             return test_example(example, node.upper_child, class_index)
         else:
             return test_example(example, node.lower_child, class_index)
@@ -366,7 +367,7 @@ def test_example(example, node, class_index):
 # -------------------------------------------------------------------------------
 
 def print_tree(node):
-    if (node.is_leaf == True):
+    if node.is_leaf:
         for x in range(node.height):
             print("\t", )
         print("Classification: " + str(node.classification))
@@ -384,9 +385,9 @@ def print_tree(node):
 # -------------------------------------------------------------------------------
 
 def print_disjunctive(node, dataset, dnf_string):
-    if (node.parent == None):
+    if node.parent is None:
         dnf_string = "Recorrido\t"
-    if (node.is_leaf == True):
+    if node.is_leaf:
         dnf_string = dnf_string[:-3]
         print(dnf_string, )
     else:
