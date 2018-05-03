@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from tec.ic.ia.pc1.g03 import generar_muestra_pais
 from p1.modelo.normalizacion import normalize, categoric_to_numeric
 from p1.modelo.normalizacion import partidos_r1_to_id, partidos_r2_to_id
+from p1.modelo.normalizacion import id_to_partidos_r1, id_to_partidos_r2
 from p1.modelo.manejo_archivos import guardar_como_csv
 
 tf.enable_eager_execution()
@@ -176,10 +177,10 @@ def nn_predict(model, df_data):
     data_list = df_data.values.tolist()
 
     if __predicting == 'r1':
-        num_to_label = {val: key for key, val in partidos_r1_to_id().items()}
+        num_to_label = id_to_partidos_r1()
         data_to_predict = [row[:-2] for row in data_list]
     else:
-        num_to_label = {val: key for key, val in partidos_r2_to_id().items()}
+        num_to_label = id_to_partidos_r2()
         if __predicting is 'r2_with_r1':
             data_to_predict = [row[:-1] for row in data_list]
         else:

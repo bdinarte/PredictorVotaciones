@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from tec.ic.ia.pc1.g03 import generar_muestra_pais
 from p1.modelo.normalizacion import normalize, categoric_to_numeric
 from p1.modelo.normalizacion import partidos_r1_to_id, partidos_r2_to_id
+from p1.modelo.normalizacion import id_to_partidos_r1, id_to_partidos_r2
 from p1.modelo.manejo_archivos import guardar_como_csv
 
 
@@ -29,7 +30,6 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
-walk_data_times = 101
 shuffle_buffer_size = 1000
 #
 # entre mas pequeño es el batch, mas lento el entrenamiento pero converge con
@@ -83,13 +83,30 @@ def rl_entrenar(model, train_data, prefix):
 def rl_validar(model, validation_data, prefix):
     results = model.evaluate(input_fn=lambda: __input_fn(validation_data,
                                                          prefix))
-    for key in sorted(results):
-        print('%s: %s' % (key, results[key]))
-    return results
+    return results['accuracy'], results['average_loss']
 
 
-def rl_predict(model, df_data):
-    pass
+def rl_predict(model, df_data, prefix):
+
+    if __predicting == 'r2_with_r1':
+        df_data.drop(labels=['VOTO_R2'], axis=1)
+    else:
+        df_data.drop(labels=['VOTO_R1', 'VOTO_R2'], axis=1)
+
+    if __predicting == 'r1':
+        classes = id_to_partidos_r1()
+    else:
+        classes = id_to_partidos_r2()
+
+    predictions = model.predict(input_fn=lambda: __input_fn(df_data, prefix))
+
+    template = 'Prediction is "{}" ({:.1f}%)'
+
+    for pred_dict in predictions:
+        class_id = pred_dict['class_ids'][0]
+        probability = pred_dict['probabilities'][class_id]
+
+        print(template.format(classes[class_id], 100 * probability))
 
 
 def rl_normalize(data_list, normalization):
@@ -219,7 +236,7 @@ def __save_data_file(df, prefix):
 def main():
     #
     # generar y normalizar las muestras
-    data = generar_muestra_pais(500)
+    data = generar_muestra_pais(2000)
     df_data = rl_normalize(data, 'os')
     #
     # separar 80% para entrenar y validar
@@ -232,12 +249,18 @@ def main():
     t_data = t_data.drop(v_data.index)
     #
     # instanciar el modelo
-    modelo = regresion_logistica('reg_log', 'l1', 'r1')
+    modelo = regresion_logistica('reg_log',
+                                 regularization='l2',
+                                 predicting='r2_with_r1')
     #
     # entrenar el modelo
     modelo = rl_entrenar(modelo, t_data, 'reg_log')
 
-    rl_validar(modelo, v_data, 'reg_log')
+    acc, avg_loss = rl_validar(modelo, v_data, 'reg_log')
+    print('Precisión: ' + str(acc))
+    print('Pérdida: ' + str(avg_loss))
+
+    rl_predict(modelo, data_to_predict, 'reg_log')
 
 
 if __name__ == '__main__':
