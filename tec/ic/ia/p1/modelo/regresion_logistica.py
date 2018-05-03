@@ -30,7 +30,6 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
-shuffle_buffer_size = 1000
 #
 # entre mas pequeño es el batch, mas lento el entrenamiento pero converge con
 # menos pasadas
@@ -76,7 +75,11 @@ def regresion_logistica(prefix, regularization='None', predicting='r1'):
 
 
 def rl_entrenar(model, train_data, prefix):
-    model.train(input_fn=lambda: __input_fn(train_data, prefix))
+    global __predicting
+    if __predicting == 'r2_with_r1':
+        for _ in range(5):
+            model.train(input_fn=lambda: __input_fn(train_data,
+                                                    prefix))
     return model
 
 
@@ -168,7 +171,6 @@ def __rl_build_dataset(data, prefix, parse_function):
     # Parsear el archivo con data
     dataset = tf.data.TextLineDataset(filename)
     dataset = dataset.map(parse_function)
-    dataset = dataset.shuffle(shuffle_buffer_size)
     dataset = dataset.batch(batch_size)
 
     return dataset
@@ -236,7 +238,7 @@ def __save_data_file(df, prefix):
 def main():
     #
     # generar y normalizar las muestras
-    data = generar_muestra_pais(2000)
+    data = generar_muestra_pais(20000)
     df_data = rl_normalize(data, 'os')
     #
     # separar 80% para entrenar y validar

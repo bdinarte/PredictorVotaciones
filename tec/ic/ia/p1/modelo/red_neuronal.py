@@ -10,11 +10,11 @@ import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 
-from tec.ic.ia.pc1.g03 import generar_muestra_pais
+from tec.ic.ia.pc1.g03 import generar_muestra_pais, generar_muestra_provincia
 from p1.modelo.normalizacion import normalize, categoric_to_numeric
-from p1.modelo.normalizacion import partidos_r1_to_id, partidos_r2_to_id
 from p1.modelo.normalizacion import id_to_partidos_r1, id_to_partidos_r2
 from p1.modelo.manejo_archivos import guardar_como_csv
+from p1.util.util import agrupar
 
 tf.enable_eager_execution()
 
@@ -32,15 +32,17 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
                 'SUPERFICIE', 'DENSIDAD_POBLACION',
                 'VIVIENDAS_INDIVIDUALES_OCUPADAS', 'PROMEDIO_DE_OCUPANTES',
                 'P.JEFAT.FEMENINA', 'P.JEFAT.COMPARTIDA']
-walk_data_times = 101
+walk_data_times = 51
 available_activations = ['relu', 'softmax', 'softplus']
-shuffle_buffer_size = 1000
 #
 # entre mas pequeño es el batch, mas lento el entrenamiento pero converge con
 # menos pasadas
 batch_size = 1500
 __predicting = ''
 __learning_rate = 0.03
+__k_fold_amount = 4
+__display_console_info = False
+
 
 # ------------------------ Funciones públicas ---------------------------------
 
@@ -136,15 +138,18 @@ def nn_entrenar(model, train_data, prefix):
         loss_for_training.append(current_walk_loss_avg.result())
         accuracy_for_training.append(current_walk_accuracy.result())
 
-        if current_walk % 10 == 0:
-            print("Pasada {:02d}: Pérdida: {:.3f}, "
-                  "Precisión: {:.2%}".format(current_walk,
-                                             current_walk_loss_avg.result(),
-                                             current_walk_accuracy.result()))
+        if __display_console_info:
+            if current_walk % 10 == 0:
+                print("Pasada {:02d}: Pérdida: {:.3f}, Precisión: "
+                      "{:.2%}".format(
+                        current_walk,
+                        current_walk_loss_avg.result(),
+                        current_walk_accuracy.result()))
 
-    __show_graphics(loss_for_training, accuracy_for_training)
+    if __display_console_info:
+        __show_graphics(loss_for_training, accuracy_for_training)
 
-    return model, loss_for_training, accuracy_for_training
+    return model
 
 
 def nn_validar(model, validation_data, prefix):
@@ -163,8 +168,8 @@ def nn_validar(model, validation_data, prefix):
         prediction = tf.argmax(model(x), axis=1, output_type=tf.int32)
         test_accuracy(prediction, y)
     #
-    # TODO: modificar el tipo de dato del retorno de precision
-    return 'Test set accuracy: {:.3%}'.format(test_accuracy.result())
+    # retorna un flotante con precision 3
+    return eval('{:.3}'.format(test_accuracy.result()))
 
 
 def nn_predict(model, df_data):
@@ -234,7 +239,6 @@ def __nn_build_dataset(data, prefix):
     # Parsear el archivo con data
     dataset = tf.data.TextLineDataset(filename)
     dataset = dataset.map(__parse_csv)
-    dataset = dataset.shuffle(shuffle_buffer_size)
     dataset = dataset.batch(batch_size)
 
     return dataset
@@ -278,6 +282,11 @@ def __parse_csv(line):
 # ---------------------- Funciones auxiliares ---------------------------------
 
 
+def __split(_list, n):
+    k, m = divmod(len(_list), n)
+    return [_list[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
+
+
 def __show_graphics(loss_results, accuracy_results):
 
     fig, axes = plt.subplots(2, sharex=True, figsize=(12, 8))
@@ -307,34 +316,48 @@ def __save_data_file(df, prefix):
     return filename
 
 
-def main():
+def run_nn(sample_size=10000, normalization='os', test_percent=0.2, layers=3,
+           units_per_layer=5, activation_f='relu', activation_out='',
+           predicting='r1', prefix='nn_', provincia=''):
     #
     # generar y normalizar las muestras
-    data = generar_muestra_pais(500)
-    df_data = nn_normalize(data, 'ss')
-    #
-    # separar 80% para entrenar y validar
-    t_data = df_data.sample(frac=0.8)
-    # el otro 20% del inicial para set holdout
-    data_to_predict = df_data.drop(t_data.index)
-    #
-    # separar 25% del conjunto de entrenamiento para validar
-    v_data = t_data.sample(frac=0.25)
-    t_data = t_data.drop(v_data.index)
-    #
-    # instanciar el modelo
-    modelo = neural_network(layer_amount=3, units_per_layer=5,
-                            activation_f='softplus',
-                            activation_on_output='',
-                            predicting='r2_with_r1')
-    #
-    # entrenar el modelo
-    modelo, _, _ = nn_entrenar(modelo, t_data, 'red_nn')
+    if provincia:
+        data = generar_muestra_provincia(sample_size, provincia)
+    else:
+        data = generar_muestra_pais(sample_size)
 
-    print(str(nn_validar(modelo, v_data, 'red_nn')))
+    df_data = nn_normalize(data, normalization)
+    #
+    # separar un porcentaje para entrenar y uno de validar
+    training_data = df_data.sample(frac=(1 - test_percent))
+    #
+    # extraer el conjunto de pruebas
+    test_data = df_data.drop(training_data.index)
+    #
+    # la línea siguiente convierte de dataframe a lista preservando el tipo
+    # de dato original
+    training_list = list(list(x) for x in zip(
+        *(training_data[x].values.tolist() for x in training_data.columns)))
 
-    print(nn_predict(modelo, data_to_predict))
+    k_groups = __split(training_list, __k_fold_amount)
+    models = list()
+    accuracies = list()
+    for v_index in range(__k_fold_amount):
+        _prefix = prefix + '_' + str(v_index)
+        #
+        # instanciar el modelo
+        models.append(neural_network(layer_amount=layers,
+                                     units_per_layer=units_per_layer,
+                                     activation_f=activation_f,
+                                     activation_on_output=activation_out,
+                                     predicting=predicting))
+        v_data, t_subset = agrupar(v_index, k_groups)
+        t_subset = DataFrame(t_subset, columns=data_columns[1:])
+        v_data = DataFrame(v_data, columns=data_columns[1:])
+        nn_entrenar(models[v_index], t_subset, _prefix)
+        accuracies.append(nn_validar(models[v_index], v_data, _prefix))
 
+    print('Precisión de cada entrenamiento:')
+    for i in range(__k_fold_amount):
+        print('Subset ' + str(i) + ': ' + str(accuracies[i]))
 
-if __name__ == '__main__':
-    main()
