@@ -519,7 +519,7 @@ def main():
     """
     # ---
 
-    b = open('arbol_res.csv', 'w')
+    b = open('../archivos/arbol_res.csv', 'w')
     a = csv.writer(b)
     for example in testset.examples:
         example[testset.class_index] = test_example(example, root, testset.class_index)
