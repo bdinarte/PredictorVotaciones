@@ -6,37 +6,39 @@ from collections import Counter
 
 # -------------------------------------------------------------------------------
 
-class data:
+class Datos:
     """
     Clase que contendra el conjunto de datos(muestras, atributos, la meta, etc)
     que seran utlizadas para generar el arbol
     """
-    def __init__(self, classifier):
-        self.examples = []
-        self.attributes = []
-        self.attr_types = []
-        self.classifier = classifier
-        self.class_index = None
+    def __init__(self, clasificador):
+        self.muestras = []
+        self.atributos = []
+        self.tipos_atributos = []
+        self.clasificador = clasificador
+        self.indice_clasificador = None
 
 # -------------------------------------------------------------------------------
 
-def preprocess2(dataset):
-    print("Preprocessing data...")
+def preprocess2(set_datos):
+    print("Preprocesando los datos...")
 
-    class_values = [example[dataset.class_index] for example in dataset.examples]
-    class_mode = Counter(class_values)
-    class_mode = class_mode.most_common(1)[0][0]
+    valores_clasificador = [muestra[set_datos.indice_clasificador] for muestra in set_datos.muestras]
 
-    for attr_index in range(len(dataset.attributes)):
+    # clasificador_plural, es el atributo que mas apariciones tiene en el set de valores meta
+    clasificador_plural = Counter(valores_clasificador)
+    clasificador_plural = clasificador_plural.most_common(1)[0][0]
 
-        ex_pacclass = filter(lambda x: x[dataset.class_index] == 'PAC', dataset.examples)
-        values_pacclass = [example[attr_index] for example in ex_pacclass]
+    for indice_atributo in range(len(set_datos.atributos)):
 
-        ex_plnclass = filter(lambda x: x[dataset.class_index] == 'PLN', dataset.examples)
-        values_plnclass = [example[attr_index] for example in ex_plnclass]
+        ex_pacclass = filter(lambda x: x[set_datos.indice_clasificador] == 'PAC', set_datos.muestras)
+        values_pacclass = [muestra[indice_atributo] for muestra in ex_pacclass]
 
-        ex_puscclass = filter(lambda x: x[dataset.class_index] == 'PUSC', dataset.examples)
-        values_puscclass = [example[attr_index] for example in ex_puscclass]
+        ex_plnclass = filter(lambda x: x[set_datos.indice_clasificador] == 'PLN', set_datos.muestras)
+        values_plnclass = [muestra[indice_atributo] for muestra in ex_plnclass]
+
+        ex_puscclass = filter(lambda x: x[set_datos.indice_clasificador] == 'PUSC', set_datos.muestras)
+        values_puscclass = [muestra[indice_atributo] for muestra in ex_puscclass]
 
         values = Counter(values_pacclass)  # value_counts = values.most_common()
         modepln = values.most_common(1)[0][0]
@@ -55,30 +57,30 @@ def preprocess2(dataset):
 
         mode_012 = [modepln, modepac, modepusc]
 
-        attr_modes = [0] * len(dataset.attributes)
-        attr_modes[attr_index] = mode_012
+        attr_modes = [0] * len(set_datos.atributos)
+        attr_modes[indice_atributo] = mode_012
 
-        for example in dataset.examples:
-            if example[attr_index] == '?':
-                if example[dataset.class_index] == 'PAC':
-                    example[attr_index] = attr_modes[attr_index][0]
-                elif example[dataset.class_index] == 'PLN':
-                    example[attr_index] = attr_modes[attr_index][1]
-                elif example[dataset.class_index] == 'PUSC':
-                    example[attr_index] = attr_modes[attr_index][2]
+        for muestra in set_datos.muestras:
+            if muestra[indice_atributo] == '?':
+                if muestra[set_datos.indice_clasificador] == 'PAC':
+                    muestra[indice_atributo] = attr_modes[indice_atributo][0]
+                elif muestra[set_datos.indice_clasificador] == 'PLN':
+                    muestra[indice_atributo] = attr_modes[indice_atributo][1]
+                elif muestra[set_datos.indice_clasificador] == 'PUSC':
+                    muestra[indice_atributo] = attr_modes[indice_atributo][2]
                 else:
-                    example[attr_index] = class_mode
+                    muestra[indice_atributo] = clasificador_plural
 
-        # convert attributes that are numeric to floats
-        for example in dataset.examples:
-            for x in range(len(dataset.examples[0])):
-                if dataset.attributes[x] == 'True':
-                    example[x] = float(example[x])
+        # convert atributos that are numeric to floats
+        for muestra in set_datos.muestras:
+            for x in range(len(set_datos.muestras[0])):
+                if set_datos.atributos[x] == 'True':
+                    muestra[x] = float(muestra[x])
 
 
 # -------------------------------------------------------------------------------
 
-class treeNode:
+class NodoArbol:
     def __init__(self, is_leaf, classification, attr_split_index, attr_split_value, parent, upper_child, lower_child,
                  height):
         self.is_leaf = True
@@ -94,44 +96,44 @@ class treeNode:
 
 # -------------------------------------------------------------------------------
 
-def compute_tree(dataset, parent_node, classifier):
-    node = treeNode(True, None, None, None, parent_node, None, None, 0)
+def compute_tree(set_datos, parent_node, clasificador):
+    node = NodoArbol(True, None, None, None, parent_node, None, None, 0)
     if parent_node is None:
         node.height = 0
     else:
         node.height = node.parent.height + 1
 
-    ones = one_count(dataset.examples, dataset.attributes, classifier)
+    ones = one_count(set_datos.muestras, set_datos.atributos, clasificador)
 
     if ones == 0:
         node.classification = 'NULO'
         node.is_leaf = True
         return node
-    elif len(dataset.examples) == ones:
-        node.classification = dataset.examples[0][-1]
+    elif len(set_datos.muestras) == ones:
+        node.classification = set_datos.muestras[0][-1]
         node.is_leaf = True
         return node
     else:
         node.is_leaf = False
 
-    #muestra_completa = [dataset.attributes] + dataset.examples
+    #muestra_completa = [set_datos.atributos] + set_datos.muestras
     #etiqueta_attr_to_split, max_gain = choose_attribute(muestra_completa)
 
-    #attr_to_split = dataset.attributes.index(etiqueta_attr_to_split)  # The index of the attribute we will split on
+    #attr_to_split = set_datos.atributos.index(etiqueta_attr_to_split)  # The index of the attribute we will split on
     #split_val = plurality_value(etiqueta_attr_to_split, muestra_completa)
 
     attr_to_split = None
     max_gain = 0  # The gain given by the best attribute
     split_val = None
     min_gain = 0.01
-    dataset_entropy = calc_dataset_entropy(dataset, classifier)
-    for attr_index in range(len(dataset.examples[0])):
+    set_datos_entropy = calc_dataset_entropy(set_datos, clasificador)
+    for attr_index in range(len(set_datos.muestras[0])):
 
-        if dataset.attributes[attr_index] != classifier:
+        if set_datos.atributos[attr_index] != clasificador:
             local_max_gain = 0
             local_split_val = None
             attr_value_list = [example[attr_index] for example in
-                               dataset.examples]  # these are the values we can split on, now we must find the best one
+                               set_datos.muestras]  # these are the values we can split on, now we must find the best one
             attr_value_list = list(set(attr_value_list))  # remove duplicates from list of all attribute values
             if len(attr_value_list) > 100:
                 attr_value_list = sorted(attr_value_list)
@@ -145,7 +147,7 @@ def compute_tree(dataset, parent_node, classifier):
             for val in attr_value_list:
                 # calculate the gain if we split on this value
                 # if gain is greater than local_max_gain, save this gain and this value
-                local_gain = calc_gain(dataset, dataset_entropy, val,
+                local_gain = calc_gain(set_datos, set_datos_entropy, val,
                                        attr_index)  # calculate the gain if we split on this value
 
                 if local_gain >= local_max_gain:
@@ -163,38 +165,38 @@ def compute_tree(dataset, parent_node, classifier):
     elif max_gain <= min_gain or node.height > 20:
 
         node.is_leaf = True
-        node.classification = classify_leaf(dataset, classifier)
+        node.classification = classify_leaf(set_datos, clasificador)
 
         return node
 
     node.attr_split_index = attr_to_split
-    node.attr_split = dataset.attributes[attr_to_split]
+    node.attr_split = set_datos.atributos[attr_to_split]
     node.attr_split_value = split_val
     # currently doing one split per node so only two datasets are created
-    upper_dataset = data(classifier)
-    lower_dataset = data(classifier)
-    upper_dataset.attributes = dataset.attributes
-    lower_dataset.attributes = dataset.attributes
-    upper_dataset.attr_types = dataset.attr_types
-    lower_dataset.attr_types = dataset.attr_types
-    for example in dataset.examples:
+    upper_dataset = Datos(clasificador)
+    lower_dataset = Datos(clasificador)
+    upper_dataset.atributos = set_datos.atributos
+    lower_dataset.atributos = set_datos.atributos
+    upper_dataset.tipos_atributos = set_datos.tipos_atributos
+    lower_dataset.tipos_atributos = set_datos.tipos_atributos
+    for example in set_datos.muestras:
         if attr_to_split is not None and split_val is not None:
             if attr_to_split is not None and example[attr_to_split] >= split_val:
-                upper_dataset.examples.append(example)
+                upper_dataset.muestras.append(example)
             elif attr_to_split is not None:
-                lower_dataset.examples.append(example)
+                lower_dataset.muestras.append(example)
 
-    node.upper_child = compute_tree(upper_dataset, node, classifier)
-    node.lower_child = compute_tree(lower_dataset, node, classifier)
+    node.upper_child = compute_tree(upper_dataset, node, clasificador)
+    node.lower_child = compute_tree(lower_dataset, node, clasificador)
 
     return node
 
 
 # -------------------------------------------------------------------------------
 
-def classify_leaf(dataset, classifier):
-    ones = one_count(dataset.examples, dataset.attributes, classifier)
-    total = len(dataset.examples)
+def classify_leaf(dataset, clasificador):
+    ones = one_count(dataset.muestras, dataset.atributos, clasificador)
+    total = len(dataset.muestras)
     zeroes = total - ones
     if ones >= zeroes:
         return 1
@@ -204,15 +206,15 @@ def classify_leaf(dataset, classifier):
 
 # -------------------------------------------------------------------------------
 
-def calc_dataset_entropy(dataset, classifier):
-    ones = one_count(dataset.examples, dataset.attributes, classifier)
-    total_examples = len(dataset.examples)
+def calc_dataset_entropy(dataset, clasificador):
+    ones = one_count(dataset.muestras, dataset.atributos, clasificador)
+    total_muestras= len(dataset.muestras)
 
     entropy = 0
-    p = ones / total_examples
+    p = ones / total_muestras
     if p != 0:
         entropy += p * math.log(p, 2)
-    p = (total_examples - ones) / total_examples
+    p = (total_muestras - ones) / total_muestras
     if p != 0:
         entropy += p * math.log(p, 2)
 
@@ -223,63 +225,63 @@ def calc_dataset_entropy(dataset, classifier):
 # -------------------------------------------------------------------------------
 
 def calc_gain(dataset, entropy, val, attr_index):
-    classifier = dataset.attributes[attr_index]
+    clasificador = dataset.atributos[attr_index]
     attr_entropy = 0
-    total_examples = len(dataset.examples)
-    gain_upper_dataset = data(classifier)
-    gain_lower_dataset = data(classifier)
-    gain_upper_dataset.attributes = dataset.attributes
-    gain_lower_dataset.attributes = dataset.attributes
-    gain_upper_dataset.attr_types = dataset.attr_types
-    gain_lower_dataset.attr_types = dataset.attr_types
-    for example in dataset.examples:
+    total_muestras = len(dataset.muestras)
+    gain_upper_dataset = Datos(clasificador)
+    gain_lower_dataset = Datos(clasificador)
+    gain_upper_dataset.atributos = dataset.atributos
+    gain_lower_dataset.atributos = dataset.atributos
+    gain_upper_dataset.tipos_atributos = dataset.tipos_atributos
+    gain_lower_dataset.tipos_atributos = dataset.tipos_atributos
+    for example in dataset.muestras:
         if example[attr_index] >= val:
-            gain_upper_dataset.examples.append(example)
+            gain_upper_dataset.muestras.append(example)
         elif example[attr_index] < val:
-            gain_lower_dataset.examples.append(example)
+            gain_lower_dataset.muestras.append(example)
 
-    if (len(gain_upper_dataset.examples) == 0 or len(
-            gain_lower_dataset.examples) == 0):
+    if (len(gain_upper_dataset.muestras) == 0 or len(
+            gain_lower_dataset.muestras) == 0):
         # Splitting didn't actually split (we tried to split on the max or min of the attribute's range)
         return -1
 
-    attr_entropy += calc_dataset_entropy(gain_upper_dataset, classifier) * len(
-        gain_upper_dataset.examples) / total_examples
-    attr_entropy += calc_dataset_entropy(gain_lower_dataset, classifier) * len(
-        gain_lower_dataset.examples) / total_examples
+    attr_entropy += calc_dataset_entropy(gain_upper_dataset, clasificador) * len(
+        gain_upper_dataset.muestras) / total_muestras
+    attr_entropy += calc_dataset_entropy(gain_lower_dataset, clasificador) * len(
+        gain_lower_dataset.muestras) / total_muestras
 
     return entropy - attr_entropy
 
 
 # -------------------------------------------------------------------------------
 
-def get_attrnames(index_attr, examples):
+def get_attrnames(index_attr, muestras):
     """
     Funcion utilizada para obtener el conjunto de valores posibles
     qiue puede obtener un determinado atributo según el conjunto de
     datos observados con que se esta entrenando el modelo
     :param index_attr: Es el indice del atributo sobre el cual se tomara la columna respectiva
     y se determinaran los posibles valores que pueden obtener las muestras
-    :param examples: es el conjunto de muestras observadas
+    :param muestras: es el conjunto de muestras observadas
     :return: lista de atributos que se le pueden asignar a la columna atributo_columna
     """
 
     list_attrnames = []
 
-    for i in range(len(examples)):
-        if list_attrnames.count(examples[i][index_attr]) == 0:
-            list_attrnames.append(examples[i][index_attr])
+    for i in range(len(muestras)):
+        if list_attrnames.count(muestras[i][index_attr]) == 0:
+            list_attrnames.append(muestras[i][index_attr])
 
     return list_attrnames
 
 
 # -------------------------------------------------------------------------------
 
-def one_count(instances, attributes, classifier):
-    # find index of classifier
-    class_index = attributes.index(classifier)
+def one_count(instances, atributos, clasificador):
+    # find index of clasificador
+    indice_clasificador = atributos.index(clasificador)
 
-    attrs_list = get_attrnames(class_index, instances)
+    attrs_list = get_attrnames(indice_clasificador, instances)
 
     count = len(attrs_list)
 
@@ -327,9 +329,9 @@ def prune_tree(root, node, dataset, best_score):
 # -------------------------------------------------------------------------------
 
 def validate_tree(node, dataset):
-    total = len(dataset.examples)
+    total = len(dataset.muestras)
     correct = 0
-    for example in dataset.examples:
+    for example in dataset.muestras:
         # validate example
         correct += validate_example(node, example)
     return correct / total
@@ -354,14 +356,14 @@ def validate_example(node, example):
 
 # -------------------------------------------------------------------------------
 
-def test_example(example, node, class_index):
+def test_example(example, node, indice_clasificador):
     if node.is_leaf:
         return node.classification
     else:
         if example[node.attr_split_index] >= node.attr_split_value:
-            return test_example(example, node.upper_child, class_index)
+            return test_example(example, node.upper_child, indice_clasificador)
         else:
-            return test_example(example, node.lower_child, class_index)
+            return test_example(example, node.lower_child, indice_clasificador)
 
 
 # -------------------------------------------------------------------------------
@@ -391,11 +393,11 @@ def print_disjunctive(node, dataset, dnf_string):
         dnf_string = dnf_string[:-3]
         print(dnf_string, )
     else:
-        upper = dnf_string + str(dataset.attributes[node.attr_split_index]) \
+        upper = dnf_string + str(dataset.atributos[node.attr_split_index]) \
                 + " >= " + str(node.attr_split_value) + " V "
         print_disjunctive(node.upper_child, dataset, upper)
 
-        lower = dnf_string + str(dataset.attributes[node.attr_split_index]) + " < " + str(node.attr_split_value) + " V "
+        lower = dnf_string + str(dataset.atributos[node.attr_split_index]) + " < " + str(node.attr_split_value) + " V "
         print_disjunctive(node.lower_child, dataset, lower)
         return
 
@@ -446,89 +448,89 @@ muestra_test1 = muestra_validacion3
 header4 = header3
 
 # create array that indicates whether each attribute is a numerical value or not
-attr_types = [False] * len(header3)
+tipos_atributos = [False] * len(header3)
 
 
 def main():
-    dataset = data("")
+    dataset = Datos("")
 
-    dataset.examples = muestra_entrenamiento3
-    dataset.attributes = header3
-    classifier = dataset.attributes[-1]  # GOAL
-    dataset.classifier = classifier
-    dataset.attr_types = attr_types  # Para saber si el atributo es nummerio o no
+    dataset.muestras = muestra_entrenamiento3
+    dataset.atributos = header3
+    clasificador = dataset.atributos[-1]  # GOAL
+    dataset.clasificador = clasificador
+    dataset.tipos_atributos = tipos_atributos  # Para saber si el atributo es nummerio o no
 
-    # find index of classifier
-    for a in range(len(dataset.attributes)):
-        if dataset.attributes[a] == dataset.classifier:
-            dataset.class_index = a
+    # find index of clasificador
+    for a in range(len(dataset.atributos)):
+        if dataset.atributos[a] == dataset.clasificador:
+            dataset.indice_clasificador = a
         else:
-            dataset.class_index = range(len(dataset.attributes))[-1]
+            dataset.indice_clasificador = range(len(dataset.atributos))[-1]
 
     # preprocess2(dataset)
 
-    print("Computing tree...")
-    root = compute_tree(dataset, None, classifier)
+    print("Creando el arbol de decision...")
+    root = compute_tree(dataset, None, clasificador)
 
     # Imprimir el arbol de desicion
     # print_tree(root)
 
-    print("Validating tree...")
+    print("Validando el arbol...")
 
-    validateset = data(classifier)
+    validateset = Datos(clasificador)
 
-    validateset.examples = muestra_validacion3
+    validateset.muestras = muestra_validacion3
 
-    validateset.attributes = header3
-    validateset.attr_types = attr_types
+    validateset.atributos = header3
+    validateset.tipos_atributos = tipos_atributos
 
-    for a in range(len(validateset.attributes)):
-        if validateset.attributes[a] == validateset.classifier:
-            validateset.class_index = a
+    for a in range(len(validateset.atributos)):
+        if validateset.atributos[a] == validateset.clasificador:
+            validateset.indice_clasificador = a
         else:
-            validateset.class_index = range(len(validateset.attributes))[-1]
+            validateset.indice_clasificador = range(len(validateset.atributos))[-1]
 
     # preprocess2(validateset)
     best_score = validate_tree(root, validateset)
 
-    print("Initial (pre-pruning) validation set score: " + str(100 * best_score) + "%")
+    print("Valor inicial de validacion (antes de hacer la poda): " + str(100 * best_score) + "%")
 
     post_prune_accuracy = 100 * prune_tree(root, root, validateset, best_score)
-    print("Post-pruning score on validation set: " + str(post_prune_accuracy) + "%")
+    print("Valor obtenido con el set de validacion despues de hacer la poda: " + str(post_prune_accuracy) + "%")
 
-    print("Testing tree...")
+    print("Generando predicciones...")
 
-    testset = data(classifier)
-    testset.examples = muestra_test1
-    testset.attributes = header4
-    testset.attr_types = attr_types
+    testset = Datos(clasificador)
+    testset.muestras = muestra_test1
+    testset.atributos = header4
+    testset.tipos_atributos = tipos_atributos
 
-    for a in range(len(testset.attributes)):
-        if testset.attributes[a] == testset.classifier:
-            testset.class_index = a
+    for a in range(len(testset.atributos)):
+        if testset.atributos[a] == testset.clasificador:
+            testset.indice_clasificador = a
         else:
-            testset.class_index = range(len(testset.attributes))[-1]
+            testset.indice_clasificador = range(len(testset.atributos))[-1]
 
     # ---
     """
-    for example in testset.examples:
-        example[testset.class_index] = '0'
-    testset.examples[0][testset.class_index] = '1'
-    testset.examples[1][testset.class_index] = '1'
-    testset.examples[2][testset.class_index] = '?'
+    for example in testset.muestras:
+        example[testset.indice_clasificador] = '0'
+    testset.muestras[0][testset.indice_clasificador] = '1'
+    testset.muestras[1][testset.indice_clasificador] = '1'
+    testset.muestras[2][testset.indice_clasificador] = '?'
     preprocess2(testset)
     """
     # ---
 
     b = open('../archivos/arbol_res.csv', 'w')
     a = csv.writer(b)
-    for example in testset.examples:
-        example[testset.class_index] = test_example(example, root, testset.class_index)
+    for example in testset.muestras:
+        example[testset.indice_clasificador] = test_example(example, root, testset.indice_clasificador)
     saveset = testset
-    saveset.examples = [saveset.attributes] + saveset.examples
-    a.writerows(saveset.examples)
+    saveset.muestras = [saveset.atributos] + saveset.muestras
+    a.writerows(saveset.muestras)
     b.close()
-    print("Testing complete. Results outputted to arbol_res.csv")
+    print("Predicciones completadas. Resultados plasmados en arbol_res.csv")
 
 
 if __name__ == "__main__":
