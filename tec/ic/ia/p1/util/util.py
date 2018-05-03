@@ -33,14 +33,12 @@ def separar(indices, porcentaje=20):
 
 
 def segmentar(indices, cant_segmentos=10):
-
     """
     Divide los indices de entrenamiento en `k_segmentos`
-
     :param indices: Conjunto de iudices que apuntan a los datos
     :param cant_segmentos: Cantidad de segmentos
-    :return: Lista de listas, donde cada una representa un segmento por medio
-    de indices apuntando a los indices
+    :return: Lista de listas, donde cada una representa un segmento
+    de los datos
 
     Ejemplos:
 

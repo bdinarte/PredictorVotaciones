@@ -22,7 +22,10 @@ sys.path.append('../..')
 import numpy as np
 import pandas as pd
 from pprint import pprint
-from pc1.util.timeit import timeit
+from p1.util.util import *
+from p1.util.timeit import *
+from p1.modelo.columnas import columnas_csv
+from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import MinMaxScaler
 
 # -----------------------------------------------------------------------------
@@ -97,7 +100,7 @@ def kdtree_aux(muestras, atribs_no_usados, max_profundidad):
         ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
 
     :param atribs_no_usados: np.array con elementos booleanos.
-    Un True representa que el atributo en esa misma posición en los matriz
+    Un True representa que el atributo en esa misma posición en la matriz
     no ha sido utilizado para bifurcar un nodo.
 
     :param max_profundidad: Representa la cantidad de niveles máx del árbol
@@ -185,6 +188,9 @@ def knn(arbol, muestra, k_vecinos, recorrido=False):
         v_atrib_consulta = muestra[atributo]
         v_atrib_actual = nodo_actual[V_ATRIBUTO]
 
+        # Siempre que queda dos elementos, uno se queda en el nodo
+        # y el otro en la izquierda, por lo que, siempre se cumple que
+        # si el hijo de la derecha es None el hijo izquierdo no lo es
         if nodo_actual[DERECHA] is None:
             nodo_actual = nodo_actual[IZQUIERDA]
 
@@ -294,7 +300,7 @@ def seleccionar(matriz, atribs_no_usados):
 
     # Se aplica la máscara para solo obtener la varianza
     # de los atributos que no han sido utilizados
-    varianzas = np.zeros(shape=len(matriz[0]))
+    varianzas = np.zeros(len(matriz[0]))
     datos_no_usados = matriz[:, atribs_no_usados]
     varianzas[atribs_no_usados] = np.var(datos_no_usados, axis=0)
 
@@ -377,6 +383,8 @@ def bifurcar(muestras, atributo):
     >>> resultado = bifurcar(muestras, atributo)
     >>> resultado[MEDIANA]
     array([16, 44, 27])
+    >>> resultado[ETIQUETA]
+    'ETIQ_3'
     >>> nodo = resultado[IZQUIERDA]
     >>> nodo[0]
     array([[22, 38, 21],
@@ -531,15 +539,15 @@ def preprocesar(matriz, columnas, columnas_c):
     A partir de la matriz de muestrss, se convierten los atributos
     categóricos a númericos; seguidamente se normaliza la matriz.
 
-    NOTA: Se asume que las columnas que no deben ser consideredas ya han
+    NOTA: Se asume que las columnas_csv que no deben ser consideredas ya han
     sido borradas. En caso el caso particular de las elecciones, se asume
     que la columna 'VOTO_R1' ya ha sido borrada cuando se solicita realizar
     predicciones de 'VOTO_R2' sin utilizar 'VOTO_R1.
 
     :param matriz: Matriz donde cada fila es una muestra
-    :param columnas: Nombres de las columnas de la matriz
-    :param columnas_c: Lista de los nombres de las columnas categoricas a las
-    que se les debe aplicar el algortimo ONE HOT ENCODING para convertirlas
+    :param columnas: Nombres de las columnas_csv de la matriz
+    :param columnas_c: Lista de los nombres de las columnas_csv categoricas a
+    las que se les debe aplicar el algortimo ONE HOT ENCODING para convertirlas
 
     :return: Tupla con la siguiente información:
         ♣ [0] = Matriz N x M con valores númericos
@@ -571,11 +579,10 @@ def preprocesar(matriz, columnas, columnas_c):
     # No interesa el nombre columna de las etiquetas
     columnas = columnas[:len(columnas)-1]
 
-    # Se aplica One Hot Encoding a las columnas categóricas
+    # Se aplica One Hot Encoding a las columnas_csv categóricas
     # Por facilidad se convierte a un Dataframe y usar
     df = pd.DataFrame(matriz, columns=columnas)
     df = pd.get_dummies(df, columns=columnas_c)
-    print(df)
 
     # Por alguna razón df.as_matriz retorna una matriz de tipo
     # str por lo que es necesario cambiar el tipo, luego se normaliza
@@ -583,6 +590,107 @@ def preprocesar(matriz, columnas, columnas_c):
     matriz = normalizar(matriz)
 
     return matriz, etiquetas
+
+# -----------------------------------------------------------------------------
+
+
+def preprocesar_ronda(datos, ronda):
+
+    columnas_c = [columnas_csv[0]]
+
+    # Ronda #1: No se necesita la columna r2
+    if ronda is 1:
+        datos_r1 = np.delete(datos,  22, axis=1)
+        columnas_r1 = np.delete(columnas_csv, 22)
+        return preprocesar(datos_r1, columnas_r1, columnas_c)
+
+    # Ronda #2 sin ronda #1: No se necesita la columan r1
+    elif ronda is 2:
+        datos_r2 = np.delete(datos, 21, axis=1)
+        columnas_r2 = np.delete(columnas_csv, 21)
+        return preprocesar(datos_r2, columnas_r2, columnas_c)
+
+    else:
+        columnas_c.append(columnas_csv[21])
+        return preprocesar(datos, columnas_csv, columnas_c)
+
+# -----------------------------------------------------------------------------
+
+
+def cross_validation(args, datos, etiquetas, k_vecinos):
+
+    precs = list()
+    predics = list()
+    indices = list(range(len(datos)))
+
+    # Se dividen los datos de entrenamiento en varios k bloques o segmentos
+    if args.k_segmentos is None:
+        segmentos = segmentar(indices)
+    else:
+        segmentos = segmentar(indices, args.k_segmentos[0])
+
+    # Se hacen k iteraciones. En cada iteración se usa un segmento
+    # diferente para validación, el resto se usa para entrenamiento
+    for k in range(len(segmentos)):
+
+        ind_validacion, ind_entrenamiento = agrupar(k, segmentos)
+
+        datos_validacion = datos[ind_validacion]
+        etiqs_validacion = etiquetas[ind_validacion]
+
+        datos_entrenamiento = datos[ind_entrenamiento]
+        etiqs_entrenamiento = etiquetas[ind_entrenamiento]
+
+        arbol = kdtree(
+            (datos_entrenamiento, etiqs_entrenamiento), max_profundidad=500)
+
+        etiqs_predics = [
+            predecir(arbol, votante, k_vecinos)
+            for votante in datos_validacion
+        ]
+
+        precision = accuracy_score(etiqs_validacion, etiqs_predics)
+        predics.append(etiqs_predics)
+        precs.append(precision)
+
+    return np.mean(precs), predics
+
+# -----------------------------------------------------------------------------
+
+
+def analisis_knn(args, datos):
+
+    print("K Nearest Neighbors")
+
+    # Si no se especifica k, se usa 5 por defecto
+    k_vecinos = 5 if args.k is None else args.k[0]
+    print("Valor de k -> " + str(k_vecinos))
+
+    # Si no se especifica se utiliza el 10% para pruebas
+    porcentaje = args.porcentaje_pruebas
+    porcentaje = 10 if porcentaje is None else porcentaje[0]
+
+    # Para guardar los archivos necesarios
+    prefijo = "knn" if args.prefijo is None else args.prefijo[0]
+
+    indices = list(range(datos.shape[0]))
+    ind_pruebas, ind_entrenamiento = separar(indices, porcentaje)
+
+    # Ronda 1
+    datos_r1, etiqs_r1 = preprocesar_ronda(datos, ronda=2)
+
+    datos_r1_pruebas = datos_r1[ind_pruebas]
+    etiqs_r1_pruebas = etiqs_r1[ind_pruebas]
+
+    datos_r1_entrenamiento = datos_r1[ind_entrenamiento]
+    etiqs_r1_entrenamiento = etiqs_r1[ind_entrenamiento]
+
+    prom_prec_r1, etiqs_predics_r1 = cross_validation(
+        args, datos_r1_entrenamiento, etiqs_r1_entrenamiento, k_vecinos)
+
+    # print("Predicciones\n" + str(etiqs_predics_r1))
+    # print("Entrenamiento\n" + str(etiqs_r1_entrenamiento))
+    print("Precisión de r2 con r1: " + str(prom_prec_r1))
 
 # -----------------------------------------------------------------------------
 
@@ -626,7 +734,7 @@ def ejemplo_kdtree():
     print("Kd-Tree")
     pprint(tree)
 
-    consulta = np.array([17, 42, 80])
+    consulta = np.array([18, 55, 30])
     print("Consulta con k = 2: " + str(consulta))
 
     # Vecinos, etiquetas, distancias, nodos_recorridos
