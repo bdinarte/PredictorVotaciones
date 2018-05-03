@@ -1,6 +1,6 @@
 from __future__ import division
-from math import log
-from texttable import Texttable
+
+import csv
 import math
 from collections import Counter
 
@@ -507,6 +507,8 @@ def main():
             testset.class_index = a
         else:
             testset.class_index = range(len(testset.attributes))[-1]
+
+    # ---
     """
     for example in testset.examples:
         example[testset.class_index] = '0'
@@ -514,7 +516,10 @@ def main():
     testset.examples[1][testset.class_index] = '1'
     testset.examples[2][testset.class_index] = '?'
     preprocess2(testset)
-    b = open('results.csv', 'w')
+    """
+    # ---
+
+    b = open('../archivos/arbol_res.csv', 'w')
     a = csv.writer(b)
     for example in testset.examples:
         example[testset.class_index] = test_example(example, root, testset.class_index)
@@ -522,8 +527,8 @@ def main():
     saveset.examples = [saveset.attributes] + saveset.examples
     a.writerows(saveset.examples)
     b.close()
-    print("Testing complete. Results outputted to results.csv")
-    """
+    print("Testing complete. Results outputted to arbol_res.csv")
+
 
 if __name__ == "__main__":
     main()
