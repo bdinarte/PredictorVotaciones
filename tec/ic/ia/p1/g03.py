@@ -6,7 +6,6 @@ sys.path.append('..')
 
 import argparse
 from tec.ic.ia.pc1.g03 import *
-from p1.modelo.columnas import *
 from p1.modelo.nearest_neighbors import *
 
 # -----------------------------------------------------------------------------
