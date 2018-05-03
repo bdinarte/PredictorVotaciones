@@ -36,10 +36,10 @@ def obtener_argumentos():
     parser.add_argument('--prefijo', nargs=1, type=str)
     parser.add_argument('--poblacion', nargs=1, type=int)
     parser.add_argument('--provincia', nargs=1, type=str)
-    parser.add_argument('--porcentaje-pruebas', nargs=1, type=int)
+    parser.add_argument('--porcentaje-pruebas', nargs=1, type=int, default=10)
 
     # Opcional. Cantidad de segmentos en k-fold-cross-validation
-    parser.add_argument('--k-segmentos', nargs=1, type=int)
+    parser.add_argument('--k-segmentos', nargs=1, type=int, default=10)
 
     # Modelos lineales
     parser.add_argument('--regresion-logistica', action='store_true')
@@ -62,7 +62,7 @@ def obtener_argumentos():
 
     # KNN - K Nearest Neighbors
     parser.add_argument('--knn', action='store_true')
-    parser.add_argument('--k', nargs=1, type=int)
+    parser.add_argument('--k', nargs=1, type=int, default=5)
 
     return parser.parse_args()
 

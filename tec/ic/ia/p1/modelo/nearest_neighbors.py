@@ -16,15 +16,16 @@ NOTAS:
     ♣ TODO: Encontrar el k más óptimo con cross-validation
 """
 
+import os
 import sys
 sys.path.append('../..')
 
-import numpy as np
-import pandas as pd
-from pprint import pprint
 from p1.util.util import *
 from p1.util.timeit import *
-from p1.modelo.columnas import columnas_csv
+from p1.modelo.columnas import *
+from p1.modelo.manejo_archivos import *
+
+from pprint import pprint
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import MinMaxScaler
 
@@ -48,7 +49,7 @@ DERECHA = 'F. DERECHA'
 # -----------------------------------------------------------------------------
 
 
-def kdtree(muestras, max_profundidad=100):
+def kdtree(muestras, max_profundidad=50):
     """
     Crea el kd-Tree como un diccionario anidado.
     Crear el árbol es equivalente a entrenear.
@@ -153,15 +154,13 @@ def kdtree_aux(muestras, atribs_no_usados, max_profundidad):
 # -----------------------------------------------------------------------------
 
 
-def knn(arbol, muestra, k_vecinos, recorrido=False):
+def knn(arbol, muestra, k_vecinos):
     """
-    Busca los `k_vecinos` más cercanos y sus distancias.
-
+    Busca los `k_vecinos` más cercanos y sus distancias
     :param arbol: Diccionario kd-Tree previamente creado
     :param muestra: np.array con la misma estructura que tienen
     las filas de la matriz que se utilizaron para crear el kd-tree
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
-    :param recorrido: True si se desea obtener la lista de nodos
     que se tuvieron que recorrer antes de llegar a la hoja (sin incluirla)
 
     :return: Tupla con la siguiente información:
@@ -172,8 +171,8 @@ def knn(arbol, muestra, k_vecinos, recorrido=False):
         para llegar hasta la hoja (ésta no se incluye)
     """
 
-    vecinos = list()
-    etiquetas = list()
+    vecinos = []
+    etiquetas = []
     nodo_actual = arbol
 
     # Se recorren los nodos hasta llegar a una hoja
@@ -195,6 +194,7 @@ def knn(arbol, muestra, k_vecinos, recorrido=False):
             nodo_actual = nodo_actual[IZQUIERDA]
 
         else:
+
             # Si hay empate se testea la distancia entre la muestra
             # y los dos hijos. Se elige el camino con menor distancia
             if v_atrib_consulta == v_atrib_actual:
@@ -215,28 +215,18 @@ def knn(arbol, muestra, k_vecinos, recorrido=False):
 
             if v_atrib_consulta < v_atrib_actual:
                 nodo_actual = nodo_actual[IZQUIERDA]
-
             else:
                 nodo_actual = nodo_actual[DERECHA]
 
-    vecinos = np.array(vecinos)
-    etiquetas = np.array(etiquetas)
-    nodos_recorridos = np.copy(vecinos)
-
     # Se ha llegado a una hoja, si no es una tupla es una hoja
     # vacía por lo que retorna None
-    if type(nodo_actual) == tuple:
-
+    if type(nodo_actual) == tuple and vecinos:
+        vecinos = np.array(vecinos)
+        etiquetas = np.array(etiquetas)
         vecinos = np.append(nodo_actual[0], vecinos, axis=0)
         etiquetas = np.append(nodo_actual[1], etiquetas)
 
-    vecinos, etiquetas, distancias = cercanos(
-        vecinos, etiquetas, muestra, k_vecinos)
-
-    if not recorrido:
-        return vecinos, etiquetas, distancias
-    else:
-        return vecinos, etiquetas, distancias, nodos_recorridos
+    return cercanos(vecinos, etiquetas, muestra, k_vecinos)
 
 # -----------------------------------------------------------------------------
 
@@ -265,6 +255,21 @@ def predecir(arbol, muestra, k_vecinos=5):
 
     # Retorna la etiqque de quién tenga más votos
     return max(votos, key=votos.get)
+
+
+# -----------------------------------------------------------------------------
+
+def predecir_conjunto(arbol, muestras, k_vecinos=5):
+    """
+    Predice las etiquetas para un conjunto de muestras
+    :param arbol: Diccionario kd-Tree previamente creado
+    :param muestras: matriz donde cada fila es una muesrta a predecir
+    :param k_vecinos: Cantidad máxima de vecinos más cercanos
+    :return: etiquetas
+    """
+
+    return [predecir(arbol, muestra, k_vecinos) for muestra in muestras]
+
 
 # -----------------------------------------------------------------------------
 
@@ -617,17 +622,13 @@ def preprocesar_ronda(datos, ronda):
 # -----------------------------------------------------------------------------
 
 
-def cross_validation(args, datos, etiquetas, k_vecinos):
+def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
 
-    precs = list()
-    predics = list()
+    precisiones = list()
+    predicciones = list()
+
     indices = list(range(len(datos)))
-
-    # Se dividen los datos de entrenamiento en varios k bloques o segmentos
-    if args.k_segmentos is None:
-        segmentos = segmentar(indices)
-    else:
-        segmentos = segmentar(indices, args.k_segmentos[0])
+    segmentos = segmentar(indices, k_segmentos)
 
     # Se hacen k iteraciones. En cada iteración se usa un segmento
     # diferente para validación, el resto se usa para entrenamiento
@@ -641,19 +642,14 @@ def cross_validation(args, datos, etiquetas, k_vecinos):
         datos_entrenamiento = datos[ind_entrenamiento]
         etiqs_entrenamiento = etiquetas[ind_entrenamiento]
 
-        arbol = kdtree(
-            (datos_entrenamiento, etiqs_entrenamiento), max_profundidad=500)
+        arbol = kdtree((datos_entrenamiento, etiqs_entrenamiento))
 
-        etiqs_predics = [
-            predecir(arbol, votante, k_vecinos)
-            for votante in datos_validacion
-        ]
+        etiqs_predics = predecir_conjunto(arbol, datos_validacion, k_vecinos)
+        predicciones += etiqs_predics
 
-        precision = accuracy_score(etiqs_validacion, etiqs_predics)
-        predics.append(etiqs_predics)
-        precs.append(precision)
+        precisiones.append(accuracy_score(etiqs_validacion, etiqs_predics))
 
-    return np.mean(precs), predics
+    return np.mean(precisiones), predicciones
 
 # -----------------------------------------------------------------------------
 
@@ -662,35 +658,48 @@ def analisis_knn(args, datos):
 
     print("K Nearest Neighbors")
 
-    # Si no se especifica k, se usa 5 por defecto
-    k_vecinos = 5 if args.k is None else args.k[0]
-    print("Valor de k -> " + str(k_vecinos))
+    # Para agregar las 4 columnas solicitadas
+    salida = np.concatenate((datos, np.zeros((datos.shape[0], 4))), axis=1)
 
-    # Si no se especifica se utiliza el 10% para pruebas
-    porcentaje = args.porcentaje_pruebas
-    porcentaje = 10 if porcentaje is None else porcentaje[0]
-
-    # Para guardar los archivos necesarios
-    prefijo = "knn" if args.prefijo is None else args.prefijo[0]
+    k_vecinos = args.k[0]
+    porcentaje_pruebas = args.porcentaje_pruebas[0]
+    prefijo_archivos = "knn" if args.prefijo is None else args.prefijo[0]
 
     indices = list(range(datos.shape[0]))
-    ind_pruebas, ind_entrenamiento = separar(indices, porcentaje)
+    ind_pruebas, ind_entrenamiento = separar(indices, porcentaje_pruebas)
 
-    # Ronda 1
-    datos_r1, etiqs_r1 = preprocesar_ronda(datos, ronda=2)
+    # Se llena la columna 'es_entrenamiento'
+    salida[ind_pruebas, 23] = 0
+    salida[ind_entrenamiento, 23] = 1
 
-    datos_r1_pruebas = datos_r1[ind_pruebas]
-    etiqs_r1_pruebas = etiqs_r1[ind_pruebas]
+    for n_ronda in range(1, 4):
 
-    datos_r1_entrenamiento = datos_r1[ind_entrenamiento]
-    etiqs_r1_entrenamiento = etiqs_r1[ind_entrenamiento]
+        predicciones = list()
+        datos_ronda, etiqs_ronda = preprocesar_ronda(datos, ronda=n_ronda)
 
-    prom_prec_r1, etiqs_predics_r1 = cross_validation(
-        args, datos_r1_entrenamiento, etiqs_r1_entrenamiento, k_vecinos)
+        datos_pruebas = datos_ronda[ind_pruebas]
+        datos_entrenamiento = datos_ronda[ind_entrenamiento]
+        etiqs_entrenamiento = etiqs_ronda[ind_entrenamiento]
 
-    # print("Predicciones\n" + str(etiqs_predics_r1))
-    # print("Entrenamiento\n" + str(etiqs_r1_entrenamiento))
-    print("Precisión de r2 con r1: " + str(prom_prec_r1))
+        prec_ronda, predics_ronda = \
+            cross_validation(datos_entrenamiento,
+                             etiqs_entrenamiento,
+                             k_vecinos, args.k_segmentos[0])
+
+        predicciones += predics_ronda
+
+        clasificador = kdtree((datos_entrenamiento, etiqs_entrenamiento))
+        predics = predecir_conjunto(clasificador, datos_pruebas, k_vecinos)
+        predicciones = predics + predicciones
+
+        salida[:, 23 + n_ronda] = predicciones
+
+        print("Precisión ronda {} -> {}".format(n_ronda, prec_ronda))
+
+    salida = pd.DataFrame(salida, columns=columnas_salida)
+    nombre_salida = os.path.join("archivos", prefijo_archivos + "_1.csv")
+    salida.to_csv(nombre_salida)
+
 
 # -----------------------------------------------------------------------------
 
@@ -738,12 +747,11 @@ def ejemplo_kdtree():
     print("Consulta con k = 2: " + str(consulta))
 
     # Vecinos, etiquetas, distancias, nodos_recorridos
-    v, e, d, r = knn(tree, consulta, k_vecinos=5, recorrido=True)
+    v, e, d = knn(tree, consulta, k_vecinos=5)
 
     print("K vecinos más cercanos: \n" + str(v))
     print("Etiquetas de los K vecinos: \n" + str(e))
     print("Distancias de los k vecinos: \n" + str(d))
-    print("Nodos recorridos: \n" + str(r))
 
     print("Realizando predicción")
     x = predecir(tree, consulta, k_vecinos=5)
