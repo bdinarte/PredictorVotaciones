@@ -1,10 +1,115 @@
 from __future__ import division
 
+import sys
+sys.path.append('../..')
 import csv
 import math
+from p1.modelo.columnas import *
 from collections import Counter
 
-# -------------------------------------------------------------------------------
+from tec.ic.ia.pc1.g03 import generar_muestra_pais, generar_muestra_provincia
+
+
+# -----------------------------------------------------------------------------
+
+def preprocesar(matriz, columnas, columnas_c):
+    """
+    A partir de la matriz de muestrss, se convierten los atributos
+    categóricos a númericos; seguidamente se normaliza la matriz.
+
+    NOTA: Se asume que las columnas que no deben ser consideredas ya han
+    sido borradas. En caso el caso particular de las elecciones, se asume
+    que la columna 'VOTO_R1' ya ha sido borrada cuando se solicita realizar
+    predicciones de 'VOTO_R2' sin utilizar 'VOTO_R1.
+
+    :param matriz: Matriz donde cada fila es una muestra
+    :param columnas: Nombres de las columnas_csv de la matriz
+    :param columnas_c: Lista de los nombres de las columnas_csv
+    categoricas a las que se les debe aplicar el algortimo ONE HOT ENCODING
+
+    :return: Tupla con la siguiente información:
+        ♣ [0] = Matriz N x M con valores númericos
+        ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
+
+    Ejemplos:
+
+    >>> mat = np.array([[2, 'CAT_1', 5, 'ETIQ_1'],
+    ...                 [3, 'CAT_2', 8, 'ETIQ_2'],
+    ...                 [7, 'CAT_3', 9, 'ETIQ_3']])
+    >>> cols = np.array(['COL_1', 'COL_2', 'COL_3', 'COL_4'])
+    >>> cols_c = ['COL_2'] # Coumna categórica
+    >>> mat, etiqs = preprocesar(mat, cols, cols_c)
+    >>> mat
+    array([[0.  , 0.  , 1.  , 0.  , 0.  ],
+           [0.2 , 0.75, 0.  , 1.  , 0.  ],
+           [1.  , 1.  , 0.  , 0.  , 1.  ]])
+    >>> etiqs
+    array(['ETIQ_1', 'ETIQ_2', 'ETIQ_3'], dtype='<U11')
+    """
+
+    if type(matriz) == list:
+        matriz = np.array(matriz)
+
+    # De la matriz de muestras, la última columna son las etiquetas
+    etiquetas = matriz[:, matriz.shape[1] - 1]
+    matriz = matriz[:, 0: matriz.shape[1] - 1]
+
+    # No interesa el nombre columna de las etiquetas
+    columnas = columnas[:len(columnas)-1]
+
+    # Se aplica One Hot Encoding a las columnas_csv categóricas
+    # Por facilidad se convierte a un Dataframe
+    df = pd.DataFrame(matriz, columns=columnas)
+    df = pd.get_dummies(df, columns=columnas_c)
+
+    # Por alguna razón df.as_matriz retorna una matriz de tipo
+    # str por lo que es necesario cambiar el tipo, luego se normaliza
+    matriz = df.as_matrix().astype(float)
+    matriz = normalizar(matriz)
+
+    return matriz, etiquetas
+
+
+# -----------------------------------------------------------------------------
+
+def preprocesar_ronda(datos, ronda):
+    """
+    Función especifica para el modelo de los votantes.
+        ♣ Se eliminan las columnas apropiadas según la ronda
+        ♣ Se aplica One Hot Encoding a las columnas que lo requierenr
+        ♣ Se normalizan los datos
+
+    :param datos: Generados por el simulador de votantes
+    :param ronda: Número de ronda. Puede ser 1, 2 o 3
+
+    :return: Tupla con la siguiente información:
+        ♣ [0] = Matriz N x M con valores númericos y normalizados
+        ♣ [1] = Vector tamaño N con las etiquetas de cada N_i de la matriz
+    """
+
+    # Columnas a las que se les debe aplicar One Hot Encoding
+    columnas_c = [columnas_csv[0]]
+
+    # Ronda #1: No se necesita la columna r2
+    if ronda is 1:
+        datos_r1 = np.delete(datos,  22, axis=1)
+        columnas_r1 = np.delete(columnas_csv, 22)
+        return preprocesar(datos_r1, columnas_r1, columnas_c)
+
+    # Ronda #2 sin ronda #1: No se necesita la columan r1
+    elif ronda is 2:
+        datos_r2 = np.delete(datos, 21, axis=1)
+        columnas_r2 = np.delete(columnas_csv, 21)
+        return preprocesar(datos_r2, columnas_r2, columnas_c)
+
+    # Ronda #2 usando ronda #1
+    # La columna de la ronda #1 pasa a ser categorica
+    else:
+        columnas_c.append(columnas_csv[21])
+        return preprocesar(datos, columnas_csv, columnas_c)
+
+
+# -----------------------------------------------------------------------------
 
 class Datos:
     def __init__(self, clasificador):
