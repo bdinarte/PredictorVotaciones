@@ -108,7 +108,7 @@ def rl_validar_alt(model, validation_data, prefix):
         if pred == dicc[val]:
             rights += 1
 
-    return rights / len(predictions)
+    return rights / len(predictions), predictions
 
 
 def rl_predict(model, df_data, prefix):
@@ -262,7 +262,8 @@ def __save_data_file(df, prefix):
     return filename
 
 
-def __get_prediction(df_data, k_groups, predicting='r1', regularization='l1',
+def __get_prediction(df_data, holdout_data, k_groups, predicting='r1',
+                     regularization='l1',
                      prefix='rl_'):
     _prefix = prefix + '_' + predicting
     models = list()
@@ -277,7 +278,7 @@ def __get_prediction(df_data, k_groups, predicting='r1', regularization='l1',
         t_subset = DataFrame(t_subset, columns=data_columns)
         v_data = DataFrame(v_data, columns=data_columns)
         rl_entrenar(models[v_index], t_subset, _prefix)
-        acc = rl_validar_alt(models[v_index], v_data, _prefix)
+        acc, _ = rl_validar_alt(models[v_index], v_data, _prefix)
         accuracies.append(acc)
         print('Subset ' + str(v_index) + ' completo.')
 
@@ -286,10 +287,15 @@ def __get_prediction(df_data, k_groups, predicting='r1', regularization='l1',
         print('Subset ' + str(i) + ' -> Precisión: ' + str(accuracies[i]))
 
     best_model_idx = accuracies.index(max(accuracies))
+    holdout_acc, holdout_predictions = rl_validar_alt(
+        models[best_model_idx],
+        holdout_data,
+        _prefix)
+    print('\nPrecisión para el set de pruebas aparte: ' + str(holdout_acc))
     predictions = rl_predict(models[best_model_idx], df_data, _prefix)
     rmtree(_prefix, ignore_errors=True)
 
-    return predictions
+    return predictions + holdout_predictions
 
 
 def run_reg_log(sample_size=3000, normalization='os', test_percent=0.2,
@@ -322,15 +328,17 @@ def run_reg_log(sample_size=3000, normalization='os', test_percent=0.2,
     result_df = result_df.assign(ES_ENTRENAMIENTO=Series(es_entrenamiento))
     #
     #
-    predictions = __get_prediction(df_data, k_groups, predicting='r1',
+    predictions = __get_prediction(training_data, test_data, k_groups,
+                                   predicting='r1',
                                    regularization=regularization,
                                    prefix=prefix)
     result_df = result_df.assign(PREDICCION_R1=Series(predictions))
-    predictions = __get_prediction(df_data, k_groups, predicting='r2',
+    predictions = __get_prediction(training_data, test_data, k_groups,
+                                   predicting='r2',
                                    regularization=regularization,
                                    prefix=prefix)
     result_df = result_df.assign(PREDICCION_R2=Series(predictions))
-    predictions = __get_prediction(df_data, k_groups,
+    predictions = __get_prediction(training_data, test_data, k_groups,
                                    predicting='r2_with_r1',
                                    regularization=regularization,
                                    prefix=prefix)
@@ -341,4 +349,4 @@ def run_reg_log(sample_size=3000, normalization='os', test_percent=0.2,
     result_df.to_csv(final_filename, index=False, header=True)
 
 
-
+run_reg_log(1000)

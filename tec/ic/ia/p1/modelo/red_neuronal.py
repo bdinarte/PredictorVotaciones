@@ -188,7 +188,7 @@ def nn_validar_alt(model, validation_data):
         if pred == dicc[val]:
             rights += 1
 
-    return rights / len(predictions)
+    return rights / len(predictions), predictions
 
 
 def nn_predict(model, df_data):
@@ -399,7 +399,8 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
             t_subset = DataFrame(t_subset, columns=data_columns[1:])
             v_data = DataFrame(v_data, columns=data_columns[1:])
             _, avg_loss = nn_entrenar(models[v_index], t_subset, _prefix)
-            accuracies.append(nn_validar_alt(models[v_index], v_data))
+            acc, _ = nn_validar_alt(models[v_index], v_data)
+            accuracies.append(acc)
             losses.append(avg_loss)
             print('Subset ' + str(v_index) + ' completo.')
 
@@ -412,15 +413,20 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
 
         best_model_idx = __select_best_model(accuracies, losses)
 
-        predictions = nn_predict(models[best_model_idx], df_data)
+        predictions = nn_predict(models[best_model_idx], training_data)
+        holdout_acc, h_predictions = nn_predict(models[best_model_idx],
+                                                test_data)
+        print('\nPrecisión para el set de pruebas aparte: ' + str(holdout_acc))
 
         if event == 'r1':
-            result_df = result_df.assign(PREDICCION_R1=Series(predictions))
+            result_df = result_df.assign(PREDICCION_R1=Series(
+                predictions + h_predictions))
         elif event == 'r2':
-            result_df = result_df.assign(PREDICCION_R2=Series(predictions))
+            result_df = result_df.assign(PREDICCION_R2=Series(
+                predictions + h_predictions))
         else:
             result_df = result_df.assign(
-                PREDICCION_R2_CON_R1=Series(predictions))
+                PREDICCION_R2_CON_R1=Series(predictions + h_predictions))
 
         rmtree(_prefix, ignore_errors=True)
 
@@ -429,4 +435,4 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
     result_df.to_csv(final_filename, index=False, header=True)
 
 
-
+run_nn(1000)
