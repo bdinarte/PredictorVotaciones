@@ -216,15 +216,6 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
             # remover valores de atributos redundates
             lista_valores_atributos = list(set(lista_valores_atributos))
 
-            # if len(lista_valores_atributos) > 100:
-            #     lista_valores_atributos = sorted(lista_valores_atributos)
-            #     total = len(lista_valores_atributos)
-            #     porcentaje = int(total / 10)
-            #     nuevos_valores = []
-            #     for x in range(0, 9):
-            #         nuevos_valores.append(lista_valores_atributos[x * porcentaje])
-            #         lista_valores_atributos = nuevos_valores
-
             for val in lista_valores_atributos:
                 # calcular la ganancia de informacion si se bifurca en este valor
                 ganancia_local = calcular_ganancia(set_datos, entropia_set_datos, val, indice_atributo)
@@ -566,38 +557,6 @@ def imprimir_arbol(nodo):
     imprimir_arbol(nodo.hijo_izq)
 
 
-# -------------------------------------------------------------------------------
-
-muestra_entrenamiento = [
-    ['SAN JOSE', '1', '25', 'SI', 'PAC'],
-    ['HEREDIA', '1', '25', 'NO', 'PUSC'],
-    ['CARTAGO', '0', '25', 'SI', 'PAC'],
-    ['HEREDIA', '0', '22', 'NO', 'PLN'],
-    ['CARTAGO', '0', '22', 'NO', 'PLN'],
-    ['SAN JOSE', '1', '25', 'NO', 'PUSC'],
-    ['CARTAGO', '1', '22', 'SI', 'RES'],
-    ['HEREDIA', '1', '50', 'SI', 'RES'],
-    ['HEREDIA', '0', '50', 'NO', 'RES'],
-    ['HEREDIA', '1', '25', 'SI', 'RES'],
-    ['CARTAGO', '0', '25', 'NO', 'RES'],
-    ['HEREDIA', '0', '22', 'SI', 'RES'],
-    ['CARTAGO', '0', '22', 'SI', 'RES']
-]
-
-muestra_validacion = [
-    ['SAN JOSE', '1', '25', 'SI', 'PAC'],
-    ['CARTAGO', '0', '22', 'NO', 'PAC'],
-    ['HEREDIA', '1', '50', 'NO', 'RES'],
-    ['SAN JOSE', '1', '50', 'SI', 'RES'],
-    ['HEREDIA', '1', '50', 'NO', 'PUSC'],
-    ['PUNTARENAS', '1', '22', 'SI', 'PLN'],
-    ['HEREDIA', '0', '25', 'NO', 'PAC'],
-    ['HEREDIA', '1', '25', 'NO', 'PAC']
-]
-
-header = ['PROVINCIA', 'TRABAJADOR', 'EDAD', 'SOLTERO', 'VOTO']
-
-
 # -----------------------------------------------------------------------------
 
 def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
@@ -744,3 +703,37 @@ def generar_test(muestras, atributos, arbol):
 
     print('\tPredicciones finalizadas')
     return testset.muestras[:, -1].tolist()
+
+
+# -------------------------------------------------------------------------------
+# Datos basicos de prueba
+# -------------------------------------------------------------------------------
+
+muestra_entrenamiento = [
+    ['SAN JOSE', '1', '25', 'SI', 'PAC'],
+    ['HEREDIA', '1', '25', 'NO', 'PUSC'],
+    ['CARTAGO', '0', '25', 'SI', 'PAC'],
+    ['HEREDIA', '0', '22', 'NO', 'PLN'],
+    ['CARTAGO', '0', '22', 'NO', 'PLN'],
+    ['SAN JOSE', '1', '25', 'NO', 'PUSC'],
+    ['CARTAGO', '1', '22', 'SI', 'RES'],
+    ['HEREDIA', '1', '50', 'SI', 'RES'],
+    ['HEREDIA', '0', '50', 'NO', 'RES'],
+    ['HEREDIA', '1', '25', 'SI', 'RES'],
+    ['CARTAGO', '0', '25', 'NO', 'RES'],
+    ['HEREDIA', '0', '22', 'SI', 'RES'],
+    ['CARTAGO', '0', '22', 'SI', 'RES']
+]
+
+muestra_validacion = [
+    ['SAN JOSE', '1', '25', 'SI', 'PAC'],
+    ['CARTAGO', '0', '22', 'NO', 'PAC'],
+    ['HEREDIA', '1', '50', 'NO', 'RES'],
+    ['SAN JOSE', '1', '50', 'SI', 'RES'],
+    ['HEREDIA', '1', '50', 'NO', 'PUSC'],
+    ['PUNTARENAS', '1', '22', 'SI', 'PLN'],
+    ['HEREDIA', '0', '25', 'NO', 'PAC'],
+    ['HEREDIA', '1', '25', 'NO', 'PAC']
+]
+
+header = ['PROVINCIA', 'TRABAJADOR', 'EDAD', 'SOLTERO', 'VOTO']
