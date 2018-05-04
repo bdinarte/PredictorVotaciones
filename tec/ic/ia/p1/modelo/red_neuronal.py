@@ -16,8 +16,6 @@ from p1.modelo.normalizacion import id_to_partidos_r1, id_to_partidos_r2
 from p1.modelo.manejo_archivos import guardar_como_csv
 from p1.util.util import agrupar
 
-tf.enable_eager_execution()
-
 # --------------------------- Constantes --------------------------------------
 
 data_columns = ['CANTON', 'EDAD', 'ES_URBANO', 'SEXO', 'ES_DEPENDIENTE',
@@ -40,7 +38,6 @@ available_activations = ['relu', 'softmax', 'softplus']
 batch_size = 1500
 __predicting = ''
 __learning_rate = 0.03
-__k_fold_amount = 4
 __display_console_info = False
 
 # ------------------------ Funciones públicas ---------------------------------
@@ -347,7 +344,7 @@ def __select_best_model(accuracies, losses):
 
 
 def run_nn(data, normalization='os', test_percent=20, layers=3,
-           units_per_layer=5, activation_f='relu', prefix='nn_'):
+           units_per_layer=5, activation_f='relu', prefix='nn_', k_fold=4):
 
     df_data = nn_normalize(data, normalization)
     result_df = DataFrame(data, columns=data_columns)
@@ -363,7 +360,7 @@ def run_nn(data, normalization='os', test_percent=20, layers=3,
     training_list = list(list(x) for x in zip(
         *(training_data[x].values.tolist() for x in training_data.columns)))
 
-    k_groups = __split(training_list, __k_fold_amount)
+    k_groups = __split(training_list, k_fold)
     #
     # agregar la columna de entrenamiento
     es_entrenamiento = len(training_data) * [1] + len(test_data) * [0]
@@ -380,7 +377,7 @@ def run_nn(data, normalization='os', test_percent=20, layers=3,
         accuracies = list()
         losses = list()
         print('\nPrediciendo: ' + event)
-        for v_index in range(__k_fold_amount):
+        for v_index in range(k_fold):
             #
             # instanciar el modelo
             models.append(neural_network(layer_amount=layers,
@@ -398,10 +395,10 @@ def run_nn(data, normalization='os', test_percent=20, layers=3,
             print('Subset ' + str(v_index) + ' completo.')
 
         print('Precisión de cada subset:')
-        for i in range(__k_fold_amount):
+        for i in range(k_fold):
             print('Subset ' + str(i) + ': ' + str(accuracies[i]))
         print('Pérdida de cada subset:')
-        for i in range(__k_fold_amount):
+        for i in range(k_fold):
             print('Subset ' + str(i) + ': ' + str(losses[i]))
 
         best_model_idx = __select_best_model(accuracies, losses)
@@ -430,10 +427,12 @@ def run_nn(data, normalization='os', test_percent=20, layers=3,
 
 def analisis_nn(args, datos):
 
+    tf.enable_eager_execution()
+
     run_nn(datos, normalization=args.normalizacion[0],
            test_percent=args.porcentaje_pruebas[0],
            layers=args.numero_capas[0],
            units_per_layer=args.unidades_por_capa[0],
            activation_f=args.funcion_activacion[0],
-           prefix=args.prefijo[0])
-
+           prefix=args.prefijo[0],
+           k_fold=args.k_segmentos[0])
