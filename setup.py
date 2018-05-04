@@ -7,13 +7,19 @@ from setuptools import setup, find_packages
 setup(
     name="tec.ic.ia.p1.g03",
     packages=find_packages(),
-    description="Proyecto I de IA: Predictor de votaciones CR",
+    description="Inteligencia Artificial: Proyecto I",
+    long_description="Predicción de votaciones ronda 1 y ronda 2 CR",
     version="1.0.0",
     author="Julian Salinas, Brandon Dinarte, Armando López",
     license="GNU General Public License v3.0",
     keywords=['tec', 'ic', 'ia', 'p1', 'g03'],
-    install_requires=['pandas', 'matplotlib', 'pytest', 'scipy', 'tensorflow', 'sklearn'],
+    url='https://github.com/bdinarte/PredictorVotaciones',
+    download_url="https://github.com/bdinarte/PredictorVotaciones/archive/v1.0.0.tar.gz",
+    install_requires=['numpy', 'pandas', 'matplotlib', 'pytest', 'scipy', 'tensorflow', 'sklearn'],
     python_requires='>=3',
     include_package_data=True,
-    package_data={'tec': ['*.txt', '*.csv', '.xlsx']}
+    package_data={"tec": ["*.txt", "*.csv", ".xlsx"]},
+    classifiers=[],
+    entry_points={},
 )
+
