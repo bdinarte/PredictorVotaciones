@@ -4,9 +4,9 @@ from __future__ import division
 
 import os
 import sys
+
 sys.path.append('../..')
 
-import math
 import pandas as pd
 from p1.util.util import *
 from p1.modelo.columnas import *
@@ -32,7 +32,7 @@ def preprocesar_ronda(datos, ronda):
 
     # Ronda #1: No se necesita la columna r2
     if ronda is 1:
-        datos_r1 = np.delete(datos,  22, axis=1)
+        datos_r1 = np.delete(datos, 22, axis=1)
         columnas_r1 = np.delete(columnas_csv, 22)
         return datos_r1, columnas_r1
 
@@ -71,6 +71,7 @@ class Datos:
 
         # indica la posicion en la que se encuentra el atributo meta
         self.indice_clasificador = None
+
 
 # -------------------------------------------------------------------------------
 
@@ -176,7 +177,7 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
     :param clasificador: es el atributo sobre el que se va clasificar en el modelo
     :return: el nodo raiz del arbol de decision una vez que se encuentra totalmente entrenado
     """
-    
+
     nodo = NodoArbol(True, None, None, None, nodo_padre, None, None, 0)
     if nodo_padre is None:
         nodo.peso = 0
@@ -196,10 +197,10 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
     else:
         nodo.es_hoja = False
 
-    atributo_bif = None         # atributo sobre el que se realizara la bifurcacion
-    ganancia_max = 0            # ganancia maxima de informacion que podra obtener el atributo
-    atributo_bif_value = None   # valor del atributo sobre el que se bifurcara
-    ganancia_min = 0.01         # ganancia minima de informacion que podra obtener el atributo
+    atributo_bif = None  # atributo sobre el que se realizara la bifurcacion
+    ganancia_max = 0  # ganancia maxima de informacion que podra obtener el atributo
+    atributo_bif_value = None  # valor del atributo sobre el que se bifurcara
+    ganancia_min = 0.01  # ganancia minima de informacion que podra obtener el atributo
 
     # se procede a calcular la entropia del set de datos
     entropia_set_datos = calcular_entropia(set_datos, clasificador)
@@ -208,7 +209,7 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
         if set_datos.atributos[indice_atributo] != clasificador:
             ganancia_max_temp = 0
             atributo_bif_value_temp = None
-            
+
             # conjunto de valores sobre los que se podran realizar bifurcaciones
             lista_valores_atributos = [muestra[indice_atributo] for muestra in set_datos.muestras]
 
@@ -243,7 +244,7 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
     if atributo_bif_value is None or atributo_bif is None:
         print("Hubo un problema. No se pudo encontrar un atributo para hacer la bifurcacion.")
         print("\tTamanho actual de las muestras: ", len(set_datos.muestras))
-        if len(set_datos.muestras)>0:
+        if len(set_datos.muestras) > 0:
             print("\tCantidad de atributos faltantes de bifurcacion ", len(set_datos.muestras[0]))
 
     elif ganancia_max <= ganancia_min or nodo.peso > 20:
@@ -314,7 +315,7 @@ def calcular_entropia(set_datos, clasificador):
     """
 
     cant_valores_distintos = contar_valores_distintos(set_datos.muestras, set_datos.atributos, clasificador)
-    total_muestras= len(set_datos.muestras)
+    total_muestras = len(set_datos.muestras)
 
     entropia = 0
     p = cant_valores_distintos / total_muestras
@@ -488,7 +489,7 @@ def validar_arbol(nodo, set_datos):
 
     for muestra in set_datos.muestras:
         resultado = validar_muestra(nodo, muestra)
-        correctos += resultado[0] # validar la muestra
+        correctos += resultado[0]  # validar la muestra
         predicciones.append(resultado[1])
 
     return correctos / total, predicciones
@@ -597,8 +598,9 @@ muestra_validacion = [
 header = ['PROVINCIA', 'TRABAJADOR', 'EDAD', 'SOLTERO', 'VOTO']
 
 
-def cross_validation(muestras_entrenamiento, atributos,  k_segmentos=10):
+# -----------------------------------------------------------------------------
 
+def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
     precisiones = list()
     predicciones = list()
     mejor_arbol = None
@@ -613,10 +615,8 @@ def cross_validation(muestras_entrenamiento, atributos,  k_segmentos=10):
 
         ind_validacion, ind_entrenamiento = agrupar(k, segmentos)
 
-        # Validadción (para el final)
         datos_validacion = muestras_entrenamiento[ind_validacion]
 
-        # Entrenamiento
         datos_entrenamiento = muestras_entrenamiento[ind_entrenamiento]
 
         set_datos = Datos("")
@@ -626,13 +626,12 @@ def cross_validation(muestras_entrenamiento, atributos,  k_segmentos=10):
         set_datos.clasificador = clasificador
         set_datos.tipos_atributos = np.zeros(len(datos_entrenamiento.shape[1]), dtype=bool)
 
-        # find index of clasificador
         for a in range(len(set_datos.atributos)):
             if set_datos.atributos[a] == set_datos.clasificador:
                 set_datos.indice_clasificador = a
             else:
                 set_datos.indice_clasificador = \
-                range(len(set_datos.atributos))[-1]
+                    range(len(set_datos.atributos))[-1]
 
         nodo_raiz = crear_arbol_decision(set_datos, None, clasificador)
         validateset = Datos(clasificador)
@@ -655,14 +654,14 @@ def cross_validation(muestras_entrenamiento, atributos,  k_segmentos=10):
 
         predicciones += etiqs_predics
 
-        # Cantidad de etiquetas predecidas correctamente vs predicciones
         precisiones.append(precision)
 
     return mejor_arbol, np.mean(precisiones), predicciones
 
 
-def analisis_arbol_decision(args, muestras):
+# -----------------------------------------------------------------------------
 
+def analisis_arbol_decision(args, muestras):
     umbral_poda = args.umbral_poda[0]
     porcentaje_pruebas = args.porcentaje_pruebas[0]
     prefijo_archivos = "arbol" if args.prefijo is None else args.prefijo[0]
@@ -678,7 +677,6 @@ def analisis_arbol_decision(args, muestras):
     salida[ind_entrenamiento, 23] = 1
 
     for n_ronda in range(1, 4):
-
         muestras_ronda, atributos = preprocesar_ronda(muestras, ronda=n_ronda)
 
         muestras_pruebas = muestras_ronda[ind_pruebas]
@@ -686,9 +684,9 @@ def analisis_arbol_decision(args, muestras):
 
         arbol, precision, predicciones = cross_validation(muestras_entrenamiento, atributos, k_segmentos=10)
 
-        # TODO: Realizar predicciones para las muestras_pruebas
-        # Concatenar las predicciones obtenidas con predicciones1
-        # predicciones = predicciones_para_conjunto_pruebas + predicciones
+        predicciones_prueba = generar_test(muestras_pruebas, atributos, arbol)
+
+        predicciones = predicciones_prueba + predicciones
 
         salida[:, 23 + n_ronda] = predicciones
 
@@ -701,70 +699,91 @@ def analisis_arbol_decision(args, muestras):
     return None
 
 
-def main():
-    return None
+# -----------------------------------------------------------------------------
 
-    #
-    # # Imprimir el arbol de desicion
-    # # imprimir_arbol(nodo_raiz)
-    #
-    # print("Validando el arbol...")
-    #
-    # validateset = Datos(clasificador)
-    #
-    # validateset.muestras = muestra_validacion3
-    #
-    # validateset.atributos = header3
-    # validateset.tipos_atributos = tipos_atributos
+def generar_test(muestras, atributos, arbol):
+    testset = Datos("")
+    testset.muestras = muestras
+    testset.atributos = atributos
+    clasificador = testset.atributos[-1]  # GOAL
+    testset.clasificador = clasificador
+    testset.tipos_atributos = np.zeros(len(muestras.shape[1]), dtype=bool)
 
-    # for a in range(len(validateset.atributos)):
-    #     if validateset.atributos[a] == validateset.clasificador:
-    #         validateset.indice_clasificador = a
-    #     else:
-    #         validateset.indice_clasificador = range(len(validateset.atributos))[-1]
-    #
-    # # preprocess2(validateset)
-    # mejor_puntaje = validar_arbol(nodo_raiz, validateset)
-    #
-    # print("Valor inicial de validacion (antes de hacer la poda): " + str(100 * mejor_puntaje) + "%")
-    #
-    # post_prune_accuracy = 100 * podar_arbol(nodo_raiz, nodo_raiz, validateset, mejor_puntaje)
-    # print("Valor obtenido con el set de validacion despues de hacer la poda: " + str(post_prune_accuracy) + "%")
-    #
-    # print("Generando predicciones...")
-    #
-    # testset = Datos(clasificador)
-    # testset.muestras = muestra_test1
-    # testset.atributos = header4
-    # testset.tipos_atributos = tipos_atributos
-    #
-    # for a in range(len(testset.atributos)):
-    #     if testset.atributos[a] == testset.clasificador:
-    #         testset.indice_clasificador = a
-    #     else:
-    #         testset.indice_clasificador = range(len(testset.atributos))[-1]
-    #
-    # # ---
-    # """
-    # for example in testset.muestras:
-    #     example[testset.indice_clasificador] = '0'
-    # testset.muestras[0][testset.indice_clasificador] = '1'
-    # testset.muestras[1][testset.indice_clasificador] = '1'
-    # testset.muestras[2][testset.indice_clasificador] = '?'
-    # preprocess2(testset)
-    # """
-    # # ---
-    #
-    # b = open('../archivos/arbol_res.csv', 'w')
-    # a = csv.writer(b)
-    # for example in testset.muestras:
-    #     example[testset.indice_clasificador] = probar_muestra(example, nodo_raiz, testset.indice_clasificador)
-    # saveset = testset
-    # saveset.muestras = [saveset.atributos] + saveset.muestras
-    # a.writerows(saveset.muestras)
-    # b.close()
-    # print("Predicciones completadas. Resultados plasmados en arbol_res.csv")
-    #
+    for a in range(len(testset.atributos)):
+        if testset.atributos[a] == testset.clasificador:
+            testset.indice_clasificador = a
+        else:
+            testset.indice_clasificador = range(len(testset.atributos))[-1]
 
-if __name__ == "__main__":
-    main()
+    for muestra in testset.muestras:
+        muestra[testset.indice_clasificador] = probar_muestra(muestra, arbol, testset.indice_clasificador)
+
+    return testset.muestras
+
+# def main():
+#     return None
+#
+#     #
+#     # # Imprimir el arbol de desicion
+#     # # imprimir_arbol(nodo_raiz)
+#     #
+#     # print("Validando el arbol...")
+#     #
+#     # validateset = Datos(clasificador)
+#     #
+#     # validateset.muestras = muestra_validacion3
+#     #
+#     # validateset.atributos = header3
+#     # validateset.tipos_atributos = tipos_atributos
+#
+#     # for a in range(len(validateset.atributos)):
+#     #     if validateset.atributos[a] == validateset.clasificador:
+#     #         validateset.indice_clasificador = a
+#     #     else:
+#     #         validateset.indice_clasificador = range(len(validateset.atributos))[-1]
+#     #
+#     # # preprocess2(validateset)
+#     # mejor_puntaje = validar_arbol(nodo_raiz, validateset)
+#     #
+#     # print("Valor inicial de validacion (antes de hacer la poda): " + str(100 * mejor_puntaje) + "%")
+#     #
+#     # post_prune_accuracy = 100 * podar_arbol(nodo_raiz, nodo_raiz, validateset, mejor_puntaje)
+#     # print("Valor obtenido con el set de validacion despues de hacer la poda: " + str(post_prune_accuracy) + "%")
+#     #
+#     # print("Generando predicciones...")
+#     #
+#     # testset = Datos(clasificador)
+#     # testset.muestras = muestra_test1
+#     # testset.atributos = header4
+#     # testset.tipos_atributos = tipos_atributos
+#     #
+#     # for a in range(len(testset.atributos)):
+#     #     if testset.atributos[a] == testset.clasificador:
+#     #         testset.indice_clasificador = a
+#     #     else:
+#     #         testset.indice_clasificador = range(len(testset.atributos))[-1]
+#     #
+#     # # ---
+#     # """
+#     # for example in testset.muestras:
+#     #     example[testset.indice_clasificador] = '0'
+#     # testset.muestras[0][testset.indice_clasificador] = '1'
+#     # testset.muestras[1][testset.indice_clasificador] = '1'
+#     # testset.muestras[2][testset.indice_clasificador] = '?'
+#     # preprocess2(testset)
+#     # """
+#     # # ---
+#     #
+#     # b = open('../archivos/arbol_res.csv', 'w')
+#     # a = csv.writer(b)
+#     # for example in testset.muestras:
+#     #     example[testset.indice_clasificador] = probar_muestra(example, nodo_raiz, testset.indice_clasificador)
+#     # saveset = testset
+#     # saveset.muestras = [saveset.atributos] + saveset.muestras
+#     # a.writerows(saveset.muestras)
+#     # b.close()
+#     # print("Predicciones completadas. Resultados plasmados en arbol_res.csv")
+#     #
+#
+# if __name__ == "__main__":
+#     main()
