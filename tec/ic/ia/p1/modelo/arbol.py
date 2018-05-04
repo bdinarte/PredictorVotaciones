@@ -430,17 +430,34 @@ def podar_arbol(nodo_raiz, nodo, set_datos, mejor_puntaje):
 # -------------------------------------------------------------------------------
 
 def validar_arbol(nodo, set_datos):
+    """
+    Funcion utilizada para validar el arbol de decision
+    que se construyo con el conjunto de datos de entrenamiento
+    :param nodo: nodo raiz del arbol de decision construido
+    :param set_datos: conjunto de datos utilizados en el modelo creado
+    :return: porcentaje de precision (correctos/ total) del proceso de validacion
+    """
+
     total = len(set_datos.muestras)
     correctos = 0
     for muestra in set_datos.muestras:
-        # validar la muestra
-        correctos += validar_muestra(nodo, muestra)
+        correctos += validar_muestra(nodo, muestra) # validar la muestra
+
     return correctos / total
 
 
 # -------------------------------------------------------------------------------
 
 def validar_muestra(nodo, muestra):
+    """
+    valida si el valor arrojado por el arbol de
+    decision es el mismo que representa a la muestra
+    :param nodo: nodo raiz del arbol de decision que ya se encuentra entrenado
+    :param muestra: datos del votante y el voto efectuado por el mismo,
+    con el que se evaluara la precision del arbol de decision
+    :return: valor de 1 o 0 para indicar si el resultado obtenido era el esperado o no
+    """
+
     if nodo.es_hoja:
         calif_proyectada = nodo.clasificacion
         calif_actual = muestra[-1]
@@ -459,6 +476,15 @@ def validar_muestra(nodo, muestra):
 # -------------------------------------------------------------------------------
 
 def probar_muestra(muestra, nodo, indice_clasificador):
+    """
+    Funcion de prueba, que predice para una muestra determinada,
+    el valor del atributo meta que se le asignara
+    :param muestra: es la muestra observada a la que se le esta prediciendo el voto
+    :param nodo: nodo raiz del arbol de decision
+    :param indice_clasificador: es el indice de la posicion que ocupa el atributo meta
+    :return: clasificacion que se le asignara a la muestra probada
+    """
+
     if nodo.es_hoja:
         return nodo.clasificacion
     else:
@@ -471,6 +497,11 @@ def probar_muestra(muestra, nodo, indice_clasificador):
 # -------------------------------------------------------------------------------
 
 def imprimir_arbol(nodo):
+    """
+    Funcion utlizada para imprimir el arbol de decision
+    :param nodo: nodo raiz del arbol de decision
+    :return: No aplica
+    """
     if nodo.es_hoja:
         for x in range(nodo.peso):
             print("\t", )
