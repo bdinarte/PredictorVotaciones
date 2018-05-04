@@ -13,6 +13,7 @@ from tec.ic.ia.pc1.g03 import generar_muestra_provincia
 from p1.modelo.arbol import analisis_arbol_decision
 from p1.modelo.nearest_neighbors import analisis_knn
 from p1.modelo.red_neuronal import analisis_nn
+from p1.modelo.regresion_logistica import analisis_rl
 
 # -----------------------------------------------------------------------------
 
@@ -38,13 +39,14 @@ def obtener_argumentos():
    """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--prefijo', nargs=1, type=str)
+    parser.add_argument('--prefijo', nargs=1, type=str, default=['p1_'])
     parser.add_argument('--provincia', nargs=1, type=str)
     parser.add_argument('--poblacion', nargs=1, type=int, default=[1000])
-    parser.add_argument('--porcentaje-pruebas', nargs=1, type=int, default=[10])
+    parser.add_argument('--porcentaje-pruebas', nargs=1, type=int,
+                        default=[10])
 
     # Opcional. Cantidad de segmentos en k-fold-cross-validation
-    parser.add_argument('--k-segmentos', nargs=1, type=int, default=[10])
+    parser.add_argument('--k-segmentos', nargs=1, type=int, default=[5])
 
     # Modelos lineales
     parser.add_argument('--regresion-logistica', action='store_true')
@@ -124,6 +126,9 @@ def main():
 
     elif args.red_neuronal:
         analisis_nn(args, datos)
+
+    elif args.regresion_logistica:
+        analisis_rl(args, datos)
 
 # -----------------------------------------------------------------------------
 

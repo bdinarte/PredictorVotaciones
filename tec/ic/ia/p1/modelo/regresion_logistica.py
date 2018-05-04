@@ -8,9 +8,7 @@ from datetime import datetime
 from shutil import rmtree
 
 import tensorflow as tf
-import atexit
 
-from tec.ic.ia.pc1.g03 import generar_muestra_pais, generar_muestra_provincia
 from p1.modelo.normalizacion import normalize, categoric_to_numeric
 from p1.modelo.normalizacion import id_to_partidos_r1, id_to_partidos_r2
 from p1.modelo.manejo_archivos import guardar_como_csv
@@ -36,7 +34,6 @@ cols_to_norm = ['EDAD', 'ESCOLARIDAD_PROMEDIO', 'POBLACION_TOTAL',
 batch_size = 1500
 __predicting = ''
 __learning_rate = 0.03
-__k_fold_amount = 4
 
 # ------------------------ Funciones públicas ---------------------------------
 
@@ -263,13 +260,13 @@ def __save_data_file(df, prefix):
 
 
 def __get_prediction(df_data, holdout_data, k_groups, predicting='r1',
-                     regularization='l1',
+                     regularization='l1', k_fold=4,
                      prefix='rl_'):
     _prefix = prefix + '_' + predicting
     models = list()
     accuracies = list()
     print('\nPrediciendo: ' + predicting)
-    for v_index in range(__k_fold_amount):
+    for v_index in range(k_fold):
         #
         # instanciar el modelo
         models.append(regresion_logistica(_prefix, regularization,
@@ -283,7 +280,7 @@ def __get_prediction(df_data, holdout_data, k_groups, predicting='r1',
         print('Subset ' + str(v_index) + ' completo.')
 
     print('Precisión de cada subset:')
-    for i in range(__k_fold_amount):
+    for i in range(k_fold):
         print('Subset ' + str(i) + ' -> Precisión: ' + str(accuracies[i]))
 
     best_model_idx = accuracies.index(max(accuracies))
@@ -298,20 +295,14 @@ def __get_prediction(df_data, holdout_data, k_groups, predicting='r1',
     return predictions + holdout_predictions
 
 
-def run_reg_log(sample_size=3000, normalization='os', test_percent=0.2,
-                regularization='l1', prefix='rl_', provincia=''):
-    #
-    # generar y normalizar las muestras
-    if provincia:
-        data = generar_muestra_provincia(sample_size, provincia)
-    else:
-        data = generar_muestra_pais(sample_size)
+def run_reg_log(data, normalization='os', test_percent=20,
+                regularization='l1', prefix='rl_', k_fold=4):
 
     df_data = rl_normalize(data, normalization)
     result_df = DataFrame(data, columns=data_columns)
     #
     # separar un porcentaje para entrenar y uno de validar
-    training_data = df_data.sample(frac=(1 - test_percent))
+    training_data = df_data.sample(frac=(1 - test_percent/100))
     #
     # extraer el conjunto de pruebas
     test_data = df_data.drop(training_data.index)
@@ -321,7 +312,7 @@ def run_reg_log(sample_size=3000, normalization='os', test_percent=0.2,
     training_list = list(list(x) for x in zip(
         *(training_data[x].values.tolist() for x in training_data.columns)))
 
-    k_groups = __split(training_list, __k_fold_amount)
+    k_groups = __split(training_list, k_fold)
     #
     # agregar la columna de entrenamiento
     es_entrenamiento = len(training_data) * [1] + len(test_data) * [0]
@@ -329,24 +320,38 @@ def run_reg_log(sample_size=3000, normalization='os', test_percent=0.2,
     #
     #
     predictions = __get_prediction(training_data, test_data, k_groups,
-                                   predicting='r1',
+                                   predicting='r1', k_fold=k_fold,
                                    regularization=regularization,
                                    prefix=prefix)
     result_df = result_df.assign(PREDICCION_R1=Series(predictions))
     predictions = __get_prediction(training_data, test_data, k_groups,
-                                   predicting='r2',
+                                   predicting='r2', k_fold=k_fold,
                                    regularization=regularization,
                                    prefix=prefix)
     result_df = result_df.assign(PREDICCION_R2=Series(predictions))
     predictions = __get_prediction(training_data, test_data, k_groups,
-                                   predicting='r2_with_r1',
+                                   predicting='r2_with_r1', k_fold=k_fold,
                                    regularization=regularization,
                                    prefix=prefix)
     result_df = result_df.assign(PREDICCION_R2_CON_R1=Series(predictions))
 
     # Se guarda el archivo con las 4 columnas de la especificación
-    final_filename = os.path.join("..", "archivos", prefix + ".csv")
+    final_filename = os.path.join("archivos", prefix + ".csv")
     result_df.to_csv(final_filename, index=False, header=True)
 
 
-run_reg_log(1000)
+def analisis_rl(args, datos):
+
+    if args.l1 == args.l2:
+        regularization = ''
+    elif args.l1:
+        regularization = 'l1'
+    else:
+        regularization = 'l2'
+
+    run_reg_log(datos,
+                normalization=args.normalizacion[0],
+                test_percent=args.porcentaje_pruebas[0],
+                regularization=regularization,
+                prefix=args.prefijo[0],
+                k_fold=args.k_segmentos[0])
