@@ -3,8 +3,9 @@ import os
 import sys
 sys.path.append('../..')
 
-from pandas import DataFrame, Series, concat
+from pandas import DataFrame, Series
 from datetime import datetime
+from shutil import rmtree
 
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
@@ -356,7 +357,7 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
         data = generar_muestra_pais(sample_size)
 
     df_data = nn_normalize(data, normalization)
-    data = DataFrame(data, columns=data_columns)
+    result_df = DataFrame(data, columns=data_columns)
     #
     # separar un porcentaje para entrenar y uno de validar
     training_data = df_data.sample(frac=(1 - test_percent))
@@ -373,7 +374,7 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
     #
     # agregar la columna de entrenamiento
     es_entrenamiento = len(training_data) * [1] + len(test_data) * [0]
-    data = data.assign(ES_ENTRENAMIENTO=Series(es_entrenamiento))
+    result_df = result_df.assign(ES_ENTRENAMIENTO=Series(es_entrenamiento))
     #
     # definiendo algunos parametros de entrenamiento
     events_to_predict = ['r1', 'r2', 'r2_with_r1']
@@ -414,14 +415,18 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
         predictions = nn_predict(models[best_model_idx], df_data)
 
         if event == 'r1':
-            data = data.assign(PREDICCION_R1=Series(predictions))
+            result_df = result_df.assign(PREDICCION_R1=Series(predictions))
         elif event == 'r2':
-            data = data.assign(PREDICCION_R2=Series(predictions))
+            result_df = result_df.assign(PREDICCION_R2=Series(predictions))
         else:
-            data = data.assign(PREDICCION_R2_CON_R1=Series(predictions))
+            result_df = result_df.assign(
+                PREDICCION_R2_CON_R1=Series(predictions))
+
+        rmtree(_prefix, ignore_errors=True)
 
     # Se guarda el archivo con las 4 columnas de la especificación
     final_filename = os.path.join("..", "archivos", prefix + ".csv")
-    data.to_csv(final_filename, index=False, header=True)
+    result_df.to_csv(final_filename, index=False, header=True)
 
-run_nn(sample_size=1000)
+
+

@@ -3,10 +3,12 @@ import os
 import sys
 sys.path.append('../..')
 
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from datetime import datetime
+from shutil import rmtree
 
 import tensorflow as tf
+import atexit
 
 from tec.ic.ia.pc1.g03 import generar_muestra_pais, generar_muestra_provincia
 from p1.modelo.normalizacion import normalize, categoric_to_numeric
@@ -260,8 +262,38 @@ def __save_data_file(df, prefix):
     return filename
 
 
-def run_rl(sample_size=3000, normalization='os', test_percent=0.2,
-           regularization='l1', predicting='r1', prefix='rl_', provincia=''):
+def __get_prediction(df_data, k_groups, predicting='r1', regularization='l1',
+                     prefix='rl_'):
+    _prefix = prefix + '_' + predicting
+    models = list()
+    accuracies = list()
+    print('\nPrediciendo: ' + predicting)
+    for v_index in range(__k_fold_amount):
+        #
+        # instanciar el modelo
+        models.append(regresion_logistica(_prefix, regularization,
+                                          predicting=predicting))
+        v_data, t_subset = agrupar(v_index, k_groups)
+        t_subset = DataFrame(t_subset, columns=data_columns)
+        v_data = DataFrame(v_data, columns=data_columns)
+        rl_entrenar(models[v_index], t_subset, _prefix)
+        acc = rl_validar_alt(models[v_index], v_data, _prefix)
+        accuracies.append(acc)
+        print('Subset ' + str(v_index) + ' completo.')
+
+    print('Precisión de cada subset:')
+    for i in range(__k_fold_amount):
+        print('Subset ' + str(i) + ' -> Precisión: ' + str(accuracies[i]))
+
+    best_model_idx = accuracies.index(max(accuracies))
+    predictions = rl_predict(models[best_model_idx], df_data, _prefix)
+    rmtree(_prefix, ignore_errors=True)
+
+    return predictions
+
+
+def run_reg_log(sample_size=3000, normalization='os', test_percent=0.2,
+                regularization='l1', prefix='rl_', provincia=''):
     #
     # generar y normalizar las muestras
     if provincia:
@@ -270,6 +302,7 @@ def run_rl(sample_size=3000, normalization='os', test_percent=0.2,
         data = generar_muestra_pais(sample_size)
 
     df_data = rl_normalize(data, normalization)
+    result_df = DataFrame(data, columns=data_columns)
     #
     # separar un porcentaje para entrenar y uno de validar
     training_data = df_data.sample(frac=(1 - test_percent))
@@ -283,25 +316,29 @@ def run_rl(sample_size=3000, normalization='os', test_percent=0.2,
         *(training_data[x].values.tolist() for x in training_data.columns)))
 
     k_groups = __split(training_list, __k_fold_amount)
-    models = list()
-    accuracies = list()
-    avg_losses = list()
-    for v_index in range(__k_fold_amount):
-        _prefix = prefix + '_' + str(v_index)
-        #
-        # instanciar el modelo
-        models.append(regresion_logistica(_prefix, regularization, predicting))
-        v_data, t_subset = agrupar(v_index, k_groups)
-        t_subset = DataFrame(t_subset, columns=data_columns)
-        v_data = DataFrame(v_data, columns=data_columns)
-        rl_entrenar(models[v_index], t_subset, _prefix)
-        acc = rl_validar_alt(models[v_index], v_data, _prefix)
-        accuracies.append(acc)
-        print('Subset ' + str(v_index) + ' completo.')
+    #
+    # agregar la columna de entrenamiento
+    es_entrenamiento = len(training_data) * [1] + len(test_data) * [0]
+    result_df = result_df.assign(ES_ENTRENAMIENTO=Series(es_entrenamiento))
+    #
+    #
+    predictions = __get_prediction(df_data, k_groups, predicting='r1',
+                                   regularization=regularization,
+                                   prefix=prefix)
+    result_df = result_df.assign(PREDICCION_R1=Series(predictions))
+    predictions = __get_prediction(df_data, k_groups, predicting='r2',
+                                   regularization=regularization,
+                                   prefix=prefix)
+    result_df = result_df.assign(PREDICCION_R2=Series(predictions))
+    predictions = __get_prediction(df_data, k_groups,
+                                   predicting='r2_with_r1',
+                                   regularization=regularization,
+                                   prefix=prefix)
+    result_df = result_df.assign(PREDICCION_R2_CON_R1=Series(predictions))
 
-    print('Precisión y pérdida promedio de cada entrenamiento:')
-    for i in range(__k_fold_amount):
-        print('Subset ' + str(i) + ' -> Precisión: ' + str(accuracies[i]))
+    # Se guarda el archivo con las 4 columnas de la especificación
+    final_filename = os.path.join("..", "archivos", prefix + ".csv")
+    result_df.to_csv(final_filename, index=False, header=True)
 
 
-run_rl(1000, predicting='r2_with_r1')
+
