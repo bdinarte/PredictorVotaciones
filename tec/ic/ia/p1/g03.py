@@ -12,6 +12,7 @@ from tec.ic.ia.pc1.g03 import generar_muestra_provincia
 
 from p1.modelo.arbol import analisis_arbol_decision
 from p1.modelo.nearest_neighbors import analisis_knn
+from p1.modelo.red_neuronal import analisis_nn
 
 # -----------------------------------------------------------------------------
 
@@ -88,12 +89,12 @@ def obtener_datos(args):
 
     # Si no se específica, se generan muestras del país
     if args.provincia is None:
-        return np.array(generar_muestra_pais(poblacion))
+        return generar_muestra_pais(poblacion)
 
     provincia = args.provincia[0].upper()
 
     if provincias.__contains__(provincia):
-        return np.array(generar_muestra_provincia(poblacion, provincia))
+        return generar_muestra_provincia(poblacion, provincia)
 
     print('La provincia especificada no existe')
     exit(-1)
@@ -110,13 +111,19 @@ def main():
 
     args = obtener_argumentos()
     datos = obtener_datos(args)
-    np.random.shuffle(datos)
 
     if args.knn:
+        datos = np.array(datos)
+        np.random.shuffle(datos)
         analisis_knn(args, datos)
 
     elif args.arbol:
+        datos = np.array(datos)
+        np.random.shuffle(datos)
         analisis_arbol_decision(args, datos)
+
+    elif args.red_neuronal:
+        analisis_nn(args, datos)
 
 # -----------------------------------------------------------------------------
 
