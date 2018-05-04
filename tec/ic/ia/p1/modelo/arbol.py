@@ -81,124 +81,128 @@ def preprocess2(set_datos):
 # -------------------------------------------------------------------------------
 
 class NodoArbol:
-    def __init__(self, is_leaf, classification, attr_split_index, attr_split_value, parent, upper_child, lower_child,
-                 height):
-        self.is_leaf = True
-        self.classification = None
-        self.attr_split = None
-        self.attr_split_index = None
-        self.attr_split_value = None
-        self.parent = parent
-        self.upper_child = None
-        self.lower_child = None
-        self.height = None
+    def __init__(self, es_hoja, clasificacion, atributo_bif_index, atributo_bif_value,
+                 nodo_padre, hijo_der, hijo_izq, peso):
+        self.es_hoja = True
+        self.clasificacion = None
+        self.atributo_bif = None
+        self.atributo_bif_index = None
+        self.atributo_bif_value = None
+        self.nodo_padre = nodo_padre
+        self.hijo_der = None
+        self.hijo_izq = None
+        self.peso = None
 
 
 # -------------------------------------------------------------------------------
 
-def compute_tree(set_datos, parent_node, clasificador):
-    node = NodoArbol(True, None, None, None, parent_node, None, None, 0)
-    if parent_node is None:
-        node.height = 0
+def crear_arbol_decision(set_datos, nodo_padre, clasificador):
+    nodo = NodoArbol(True, None, None, None, nodo_padre, None, None, 0)
+    if nodo_padre is None:
+        nodo.peso = 0
     else:
-        node.height = node.parent.height + 1
+        nodo.peso = nodo.nodo_padre.peso + 1
 
-    ones = one_count(set_datos.muestras, set_datos.atributos, clasificador)
+    cant_valores_distintos = contar_valores_distintos(set_datos.muestras, set_datos.atributos, clasificador)
 
-    if ones == 0:
-        node.classification = 'NULO'
-        node.is_leaf = True
-        return node
-    elif len(set_datos.muestras) == ones:
-        node.classification = set_datos.muestras[0][-1]
-        node.is_leaf = True
-        return node
+    if cant_valores_distintos == 0:
+        nodo.clasificacion = 'NULO'
+        nodo.es_hoja = True
+        return nodo
+    elif len(set_datos.muestras) == cant_valores_distintos:
+        nodo.clasificacion = set_datos.muestras[0][-1]
+        nodo.es_hoja = True
+        return nodo
     else:
-        node.is_leaf = False
+        nodo.es_hoja = False
 
-    #muestra_completa = [set_datos.atributos] + set_datos.muestras
-    #etiqueta_attr_to_split, max_gain = choose_attribute(muestra_completa)
+    atributo_bif = None
+    ganancia_max = 0  # The gain given by the best attribute
+    atributo_bif_value = None
+    ganancia_min = 0.01
+    entropia_set_datos = calcular_entropia(set_datos, clasificador)
+    for indice_atributo in range(len(set_datos.muestras[0])):
 
-    #attr_to_split = set_datos.atributos.index(etiqueta_attr_to_split)  # The index of the attribute we will split on
-    #split_val = plurality_value(etiqueta_attr_to_split, muestra_completa)
+        if set_datos.atributos[indice_atributo] != clasificador:
+            ganancia_max_temp = 0
+            atributo_bif_value_temp = None
+            
+            # these are the values we can split on, now we must find the best one
+            lista_valores_atributos = [example[indice_atributo] for example in set_datos.muestras]
 
-    attr_to_split = None
-    max_gain = 0  # The gain given by the best attribute
-    split_val = None
-    min_gain = 0.01
-    set_datos_entropy = calc_dataset_entropy(set_datos, clasificador)
-    for attr_index in range(len(set_datos.muestras[0])):
+            # remove duplicates from list of all attribute values
+            lista_valores_atributos = list(set(lista_valores_atributos))
 
-        if set_datos.atributos[attr_index] != clasificador:
-            local_max_gain = 0
-            local_split_val = None
-            attr_value_list = [example[attr_index] for example in
-                               set_datos.muestras]  # these are the values we can split on, now we must find the best one
-            attr_value_list = list(set(attr_value_list))  # remove duplicates from list of all attribute values
-            if len(attr_value_list) > 100:
-                attr_value_list = sorted(attr_value_list)
-                total = len(attr_value_list)
-                ten_percentile = int(total / 10)
-                new_list = []
+            if len(lista_valores_atributos) > 100:
+                lista_valores_atributos = sorted(lista_valores_atributos)
+                total = len(lista_valores_atributos)
+                porcentaje = int(total / 10)
+                nuevos_valores = []
                 for x in range(1, 10):
-                    new_list.append(attr_value_list[x * ten_percentile])
-                attr_value_list = new_list
+                    nuevos_valores.append(lista_valores_atributos[x * porcentaje])
+                    lista_valores_atributos = nuevos_valores
 
-            for val in attr_value_list:
+            for val in lista_valores_atributos:
                 # calculate the gain if we split on this value
-                # if gain is greater than local_max_gain, save this gain and this value
-                local_gain = calc_gain(set_datos, set_datos_entropy, val,
-                                       attr_index)  # calculate the gain if we split on this value
+                # if gain is greater than ganancia_max_temp, save this gain and this value
+                ganancia_local = calcular_ganancia(set_datos, entropia_set_datos, val,
+                                       indice_atributo)  # calculate the gain if we split on this value
 
-                if local_gain >= local_max_gain:
-                    local_max_gain = local_gain
-                    local_split_val = val
+                if ganancia_local >= ganancia_max_temp:
+                    ganancia_max_temp = ganancia_local
+                    atributo_bif_value_temp = val
 
-            if local_max_gain >= max_gain:
-                max_gain = local_max_gain
-                split_val = local_split_val
-                attr_to_split = attr_index
+            if ganancia_max_temp >= ganancia_max:
+                ganancia_max = ganancia_max_temp
+                atributo_bif_value = atributo_bif_value_temp
+                atributo_bif = indice_atributo
 
-    # attr_to_split is now the best attribute according to our gain metric
-    if split_val is None or attr_to_split is None:
-        print("Something went wrong. Couldn't find an attribute to split on or a split value.")
-    elif max_gain <= min_gain or node.height > 20:
+    # atributo_bif is now the best attribute according to our gain metric
+    if atributo_bif_value is None or atributo_bif is None:
+        print("Hubo un problema. No se pudo encontrar un atributo para hacer la bifurcacion.")
+        print("\tTamanho actual de las muestras: ", len(set_datos.muestras))
+        if len(set_datos.muestras)>0:
+            print("\tCantidad de atributos faltantes de bifurcacion ", len(set_datos.muestras[0]))
 
-        node.is_leaf = True
-        node.classification = classify_leaf(set_datos, clasificador)
+    elif ganancia_max <= ganancia_min or nodo.peso > 20:
+        nodo.es_hoja = True
+        nodo.clasificacion = clasificar_hoja(set_datos, clasificador)
+        return nodo
 
-        return node
+    nodo.atributo_bif_index = atributo_bif
+    nodo.atributo_bif = set_datos.atributos[atributo_bif]
+    nodo.atributo_bif_value = atributo_bif_value
 
-    node.attr_split_index = attr_to_split
-    node.attr_split = set_datos.atributos[attr_to_split]
-    node.attr_split_value = split_val
-    # currently doing one split per node so only two datasets are created
-    upper_dataset = Datos(clasificador)
-    lower_dataset = Datos(clasificador)
-    upper_dataset.atributos = set_datos.atributos
-    lower_dataset.atributos = set_datos.atributos
-    upper_dataset.tipos_atributos = set_datos.tipos_atributos
-    lower_dataset.tipos_atributos = set_datos.tipos_atributos
-    for example in set_datos.muestras:
-        if attr_to_split is not None and split_val is not None:
-            if attr_to_split is not None and example[attr_to_split] >= split_val:
-                upper_dataset.muestras.append(example)
-            elif attr_to_split is not None:
-                lower_dataset.muestras.append(example)
+    # currently doing one split per nodo so only two datasets are created
+    set_datos_der = Datos(clasificador)
+    set_datos_izq = Datos(clasificador)
 
-    node.upper_child = compute_tree(upper_dataset, node, clasificador)
-    node.lower_child = compute_tree(lower_dataset, node, clasificador)
+    set_datos_der.atributos = set_datos.atributos
+    set_datos_izq.atributos = set_datos.atributos
 
-    return node
+    set_datos_der.tipos_atributos = set_datos.tipos_atributos
+    set_datos_izq.tipos_atributos = set_datos.tipos_atributos
+
+    for muestra in set_datos.muestras:
+        if atributo_bif is not None and atributo_bif_value is not None:
+            if atributo_bif is not None and muestra[atributo_bif] >= atributo_bif_value:
+                set_datos_der.muestras.append(muestra)
+            elif atributo_bif is not None:
+                set_datos_izq.muestras.append(muestra)
+
+    nodo.hijo_der = crear_arbol_decision(set_datos_der, nodo, clasificador)
+    nodo.hijo_izq = crear_arbol_decision(set_datos_izq, nodo, clasificador)
+
+    return nodo
 
 
 # -------------------------------------------------------------------------------
 
-def classify_leaf(dataset, clasificador):
-    ones = one_count(dataset.muestras, dataset.atributos, clasificador)
-    total = len(dataset.muestras)
-    zeroes = total - ones
-    if ones >= zeroes:
+def clasificar_hoja(set_datos, clasificador):
+    cant_valores_distintos = contar_valores_distintos(set_datos.muestras, set_datos.atributos, clasificador)
+    total = len(set_datos.muestras)
+    diferencia = total - cant_valores_distintos
+    if cant_valores_distintos >= diferencia:
         return 1
     else:
         return 0
@@ -206,200 +210,185 @@ def classify_leaf(dataset, clasificador):
 
 # -------------------------------------------------------------------------------
 
-def calc_dataset_entropy(dataset, clasificador):
-    ones = one_count(dataset.muestras, dataset.atributos, clasificador)
-    total_muestras= len(dataset.muestras)
+def calcular_entropia(set_datos, clasificador):
+    cant_valores_distintos = contar_valores_distintos(set_datos.muestras, set_datos.atributos, clasificador)
+    total_muestras= len(set_datos.muestras)
 
-    entropy = 0
-    p = ones / total_muestras
+    entropia = 0
+    p = cant_valores_distintos / total_muestras
     if p != 0:
-        entropy += p * math.log(p, 2)
-    p = (total_muestras - ones) / total_muestras
+        entropia += p * math.log(p, 2)
+    p = (total_muestras - cant_valores_distintos) / total_muestras
     if p != 0:
-        entropy += p * math.log(p, 2)
+        entropia += p * math.log(p, 2)
 
-    entropy = -entropy
-    return entropy
+    entropia = -entropia
+    return entropia
 
 
 # -------------------------------------------------------------------------------
 
-def calc_gain(dataset, entropy, val, attr_index):
-    clasificador = dataset.atributos[attr_index]
-    attr_entropy = 0
-    total_muestras = len(dataset.muestras)
-    gain_upper_dataset = Datos(clasificador)
-    gain_lower_dataset = Datos(clasificador)
-    gain_upper_dataset.atributos = dataset.atributos
-    gain_lower_dataset.atributos = dataset.atributos
-    gain_upper_dataset.tipos_atributos = dataset.tipos_atributos
-    gain_lower_dataset.tipos_atributos = dataset.tipos_atributos
-    for example in dataset.muestras:
-        if example[attr_index] >= val:
-            gain_upper_dataset.muestras.append(example)
-        elif example[attr_index] < val:
-            gain_lower_dataset.muestras.append(example)
+def calcular_ganancia(set_datos, entropia, val, indice_atributo):
+    clasificador = set_datos.atributos[indice_atributo]
+    entropia_atributo = 0
+    total_muestras = len(set_datos.muestras)
 
-    if (len(gain_upper_dataset.muestras) == 0 or len(
-            gain_lower_dataset.muestras) == 0):
-        # Splitting didn't actually split (we tried to split on the max or min of the attribute's range)
+    ganancia_set_der = Datos(clasificador)
+    ganancia_set_izq = Datos(clasificador)
+
+    ganancia_set_der.atributos = set_datos.atributos
+    ganancia_set_izq.atributos = set_datos.atributos
+
+    ganancia_set_der.tipos_atributos = set_datos.tipos_atributos
+    ganancia_set_izq.tipos_atributos = set_datos.tipos_atributos
+
+    for muestra in set_datos.muestras:
+        if muestra[indice_atributo] >= val:
+            ganancia_set_der.muestras.append(muestra)
+        elif muestra[indice_atributo] < val:
+            ganancia_set_izq.muestras.append(muestra)
+
+    # Splitting didn't actually split (we tried to split on the max or min of the attribute's range)
+    if len(ganancia_set_der.muestras) == 0 or len(ganancia_set_izq.muestras) == 0:
         return -1
 
-    attr_entropy += calc_dataset_entropy(gain_upper_dataset, clasificador) * len(
-        gain_upper_dataset.muestras) / total_muestras
-    attr_entropy += calc_dataset_entropy(gain_lower_dataset, clasificador) * len(
-        gain_lower_dataset.muestras) / total_muestras
+    entropia_atributo += calcular_entropia(ganancia_set_der, clasificador) * len(
+        ganancia_set_der.muestras) / total_muestras
 
-    return entropy - attr_entropy
+    entropia_atributo += calcular_entropia(ganancia_set_izq, clasificador) * len(
+        ganancia_set_izq.muestras) / total_muestras
+
+    return entropia - entropia_atributo
 
 
 # -------------------------------------------------------------------------------
 
-def get_attrnames(index_attr, muestras):
+def get_nombre_atributos(indice_atributo, muestras):
     """
     Funcion utilizada para obtener el conjunto de valores posibles
     qiue puede obtener un determinado atributo según el conjunto de
     datos observados con que se esta entrenando el modelo
-    :param index_attr: Es el indice del atributo sobre el cual se tomara la columna respectiva
+    :param indice_atributo: Es el indice del atributo sobre el cual se tomara la columna respectiva
     y se determinaran los posibles valores que pueden obtener las muestras
     :param muestras: es el conjunto de muestras observadas
     :return: lista de atributos que se le pueden asignar a la columna atributo_columna
     """
 
-    list_attrnames = []
+    lista_atributos = []
 
     for i in range(len(muestras)):
-        if list_attrnames.count(muestras[i][index_attr]) == 0:
-            list_attrnames.append(muestras[i][index_attr])
+        if lista_atributos.count(muestras[i][indice_atributo]) == 0:
+            lista_atributos.append(muestras[i][indice_atributo])
 
-    return list_attrnames
+    return lista_atributos
 
 
 # -------------------------------------------------------------------------------
 
-def one_count(instances, atributos, clasificador):
+def contar_valores_distintos(muestras, atributos, clasificador):
     # find index of clasificador
     indice_clasificador = atributos.index(clasificador)
 
-    attrs_list = get_attrnames(indice_clasificador, instances)
+    lista_atributos = get_nombre_atributos(indice_clasificador, muestras)
 
-    count = len(attrs_list)
+    cantidad = len(lista_atributos)
 
-    return count
+    return cantidad
 
 
 # -------------------------------------------------------------------------------
 
-def prune_tree(root, node, dataset, best_score):
-    # if node is a leaf
-    if node.is_leaf:
-        # get its classification
-        classification = node.classification
-        # run validate_tree on a tree with the nodes parent as a leaf with its classification
-        node.parent.is_leaf = True
-        node.parent.classification = node.classification
-        if node.height < 20:
-            new_score = validate_tree(root, dataset)
+def podar_arbol(nodo_raiz, nodo, set_datos, mejor_puntaje):
+    # if nodo is a leaf
+    if nodo.es_hoja:
+        # run validar_arbol on a tree with the nodes nodo_padre as a leaf with its clasificacion
+        nodo.nodo_padre.es_hoja = True
+        nodo.nodo_padre.clasificacion = nodo.clasificacion
+        if nodo.peso < 20:
+            nuevo_puntaje = validar_arbol(nodo_raiz, set_datos)
         else:
-            new_score = 0
+            nuevo_puntaje = 0
 
         # if its better, change it
-        if new_score >= best_score:
-            return new_score
+        if nuevo_puntaje >= mejor_puntaje:
+            return nuevo_puntaje
         else:
-            node.parent.is_leaf = False
-            node.parent.classification = None
-            return best_score
+            nodo.nodo_padre.es_hoja = False
+            nodo.nodo_padre.clasificacion = None
+            return mejor_puntaje
     # if its not a leaf
     else:
-        # prune tree(node.upper_child)
-        new_score = prune_tree(root, node.upper_child, dataset, best_score)
+        # prune tree(nodo.hijo_der)
+        nuevo_puntaje = podar_arbol(nodo_raiz, nodo.hijo_der, set_datos, mejor_puntaje)
         # if its now a leaf, return
-        if node.is_leaf:
-            return new_score
-        # prune tree(node.lower_child)
-        new_score = prune_tree(root, node.lower_child, dataset, new_score)
+        if nodo.es_hoja:
+            return nuevo_puntaje
+        # prune tree(nodo.hijo_izq)
+        nuevo_puntaje = podar_arbol(nodo_raiz, nodo.hijo_izq, set_datos, nuevo_puntaje)
         # if its now a leaf, return
-        if node.is_leaf:
-            return new_score
+        if nodo.es_hoja:
+            return nuevo_puntaje
 
-        return new_score
+        return nuevo_puntaje
 
 
 # -------------------------------------------------------------------------------
 
-def validate_tree(node, dataset):
-    total = len(dataset.muestras)
-    correct = 0
-    for example in dataset.muestras:
-        # validate example
-        correct += validate_example(node, example)
-    return correct / total
+def validar_arbol(nodo, set_datos):
+    total = len(set_datos.muestras)
+    correctos = 0
+    for muestra in set_datos.muestras:
+        # validar la muestra
+        correctos += validar_muestra(nodo, muestra)
+    return correctos / total
 
 
 # -------------------------------------------------------------------------------
 
-def validate_example(node, example):
-    if node.is_leaf:
-        projected = node.classification
-        actual = example[-1]
-        if projected == actual:
+def validar_muestra(nodo, muestra):
+    if nodo.es_hoja:
+        calif_proyectada = nodo.clasificacion
+        calif_actual = muestra[-1]
+        if calif_proyectada == calif_actual:
             return 1
         else:
             return 0
-    value = example[node.attr_split_index]
-    if value >= node.attr_split_value:
-        return validate_example(node.upper_child, example)
+
+    value = muestra[nodo.atributo_bif_index]
+    if value >= nodo.atributo_bif_value:
+        return validar_muestra(nodo.hijo_der, muestra)
     else:
-        return validate_example(node.lower_child, example)
+        return validar_muestra(nodo.hijo_izq, muestra)
 
 
 # -------------------------------------------------------------------------------
 
-def test_example(example, node, indice_clasificador):
-    if node.is_leaf:
-        return node.classification
+def probar_muestra(muestra, nodo, indice_clasificador):
+    if nodo.es_hoja:
+        return nodo.clasificacion
     else:
-        if example[node.attr_split_index] >= node.attr_split_value:
-            return test_example(example, node.upper_child, indice_clasificador)
+        if muestra[nodo.atributo_bif_index] >= nodo.atributo_bif_value:
+            return probar_muestra(muestra, nodo.hijo_der, indice_clasificador)
         else:
-            return test_example(example, node.lower_child, indice_clasificador)
+            return probar_muestra(muestra, nodo.hijo_izq, indice_clasificador)
 
 
 # -------------------------------------------------------------------------------
 
-def print_tree(node):
-    if node.is_leaf:
-        for x in range(node.height):
+def imprimir_arbol(nodo):
+    if nodo.es_hoja:
+        for x in range(nodo.peso):
             print("\t", )
-        print("Classification: " + str(node.classification))
+        print("clasificacion: " + str(nodo.clasificacion))
         return
-    for x in range(node.height):
+    for x in range(nodo.peso):
         print("\t", )
-    print("Split index: " + str(node.attr_split))
-    for x in range(node.height):
+    print("Split index: " + str(nodo.atributo_bif))
+    for x in range(nodo.peso):
         print("\t", )
-    print("Split value: " + str(node.attr_split_value))
-    print_tree(node.upper_child)
-    print_tree(node.lower_child)
-
-
-# -------------------------------------------------------------------------------
-
-def print_disjunctive(node, dataset, dnf_string):
-    if node.parent is None:
-        dnf_string = "Recorrido\t"
-    if node.is_leaf:
-        dnf_string = dnf_string[:-3]
-        print(dnf_string, )
-    else:
-        upper = dnf_string + str(dataset.atributos[node.attr_split_index]) \
-                + " >= " + str(node.attr_split_value) + " V "
-        print_disjunctive(node.upper_child, dataset, upper)
-
-        lower = dnf_string + str(dataset.atributos[node.attr_split_index]) + " < " + str(node.attr_split_value) + " V "
-        print_disjunctive(node.lower_child, dataset, lower)
-        return
+    print("Split value: " + str(nodo.atributo_bif_value))
+    imprimir_arbol(nodo.hijo_der)
+    imprimir_arbol(nodo.hijo_izq)
 
 
 # -------------------------------------------------------------------------------
@@ -452,28 +441,28 @@ tipos_atributos = [False] * len(header3)
 
 
 def main():
-    dataset = Datos("")
+    set_datos = Datos("")
 
-    dataset.muestras = muestra_entrenamiento3
-    dataset.atributos = header3
-    clasificador = dataset.atributos[-1]  # GOAL
-    dataset.clasificador = clasificador
-    dataset.tipos_atributos = tipos_atributos  # Para saber si el atributo es nummerio o no
+    set_datos.muestras = muestra_entrenamiento3
+    set_datos.atributos = header3
+    clasificador = set_datos.atributos[-1]  # GOAL
+    set_datos.clasificador = clasificador
+    set_datos.tipos_atributos = tipos_atributos  # Para saber si el atributo es nummerio o no
 
     # find index of clasificador
-    for a in range(len(dataset.atributos)):
-        if dataset.atributos[a] == dataset.clasificador:
-            dataset.indice_clasificador = a
+    for a in range(len(set_datos.atributos)):
+        if set_datos.atributos[a] == set_datos.clasificador:
+            set_datos.indice_clasificador = a
         else:
-            dataset.indice_clasificador = range(len(dataset.atributos))[-1]
+            set_datos.indice_clasificador = range(len(set_datos.atributos))[-1]
 
-    # preprocess2(dataset)
+    # preprocess2(set_datos)
 
     print("Creando el arbol de decision...")
-    root = compute_tree(dataset, None, clasificador)
+    nodo_raiz = crear_arbol_decision(set_datos, None, clasificador)
 
     # Imprimir el arbol de desicion
-    # print_tree(root)
+    # imprimir_arbol(nodo_raiz)
 
     print("Validando el arbol...")
 
@@ -491,11 +480,11 @@ def main():
             validateset.indice_clasificador = range(len(validateset.atributos))[-1]
 
     # preprocess2(validateset)
-    best_score = validate_tree(root, validateset)
+    mejor_puntaje = validar_arbol(nodo_raiz, validateset)
 
-    print("Valor inicial de validacion (antes de hacer la poda): " + str(100 * best_score) + "%")
+    print("Valor inicial de validacion (antes de hacer la poda): " + str(100 * mejor_puntaje) + "%")
 
-    post_prune_accuracy = 100 * prune_tree(root, root, validateset, best_score)
+    post_prune_accuracy = 100 * podar_arbol(nodo_raiz, nodo_raiz, validateset, mejor_puntaje)
     print("Valor obtenido con el set de validacion despues de hacer la poda: " + str(post_prune_accuracy) + "%")
 
     print("Generando predicciones...")
@@ -525,7 +514,7 @@ def main():
     b = open('../archivos/arbol_res.csv', 'w')
     a = csv.writer(b)
     for example in testset.muestras:
-        example[testset.indice_clasificador] = test_example(example, root, testset.indice_clasificador)
+        example[testset.indice_clasificador] = probar_muestra(example, nodo_raiz, testset.indice_clasificador)
     saveset = testset
     saveset.muestras = [saveset.atributos] + saveset.muestras
     a.writerows(saveset.muestras)
