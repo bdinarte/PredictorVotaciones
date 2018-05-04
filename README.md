@@ -1,6 +1,6 @@
 ﻿# Predictor de Votaciones CR
 
-Módulo que puede entrenar distintos modelos de clasificación de votantes y genera una serie de archivos de salida analizando el rendimiento de cada modelo.
+El objetivo de este software es entrenar y evaluar distintos modelos de clasificación. Para lograrlo se hace uso de un conjunto de `votantes` generados con base en los indicadores cantonales del estado de la nación del 2011 y de los escrutinios de votos para presidencia del 2018. 
 
 ## Instalación
 
@@ -20,7 +20,7 @@ Módulo que puede entrenar distintos modelos de clasificación de votantes y gen
 ## Manual de Uso
 
 ## Reportes de Métodos Implementados
-### Clasificación basada en modelos lineales
+###Clasificación basada en modelos lineales
 
 ### Clasificación basada en redes neuronales
 
@@ -53,6 +53,18 @@ Donde:
 
 
 ### Clasificación basada en KNN con Kd-trees
+
+La definición de la función $NN(k, x_i)$ es sencilla :blush:; dado un conjunto de N muestras y una consulta $x_q$,  se debe retornar la muestra $n_i$ que resulte en la menor distancia  con $x_q$. Esto tiene un costo computacional de $O(N)$ por lo que no resulta eficiente ante grandes cantidades de datos :disappointed_relieved:. 
+
+Una solución a esto es disminuir el tiempo de consulta por medio de la estructura `k-d tree` . Con esta estructura se puede reducir el espacio de búsqueda a la mitad cada vez que se realiza una iteración. En cada una de estas iteraciones se selecciona un atributo mediante algún criterio, como la varianza, o por medio de alguna secuencia definida. 
+
+En el siguiente ejemplo se puede apreciar el procedimiento utilizado para contruir un `k-d tree` con solamente dos dimensiones. 
+
+![Kd-Tree](/imgs/kd_tree_estructura.png "Kd-Tree")
+
+Primeramente, se dividen las muestras utilizando el atributo $x$ ![#f03c15](https://placehold.it/15/f03c15/000000?text=+), posteriormente se utiliza el atributo $y$ para los dos subconjuntos resultantes (![#FFBF00](https://placehold.it/15/FFBF00/000000?text=+), ![#2E64FE](https://placehold.it/15/#2E64FE/000000?text=+)) recursivamente se aplica el procedimiento hasta que solamente se conserve un par $(x, y)$ en los nodos resultantes ![#f1f1f1](https://placehold.it/15/f1f1f1/000000?text=+). 
+
+
 
 ## Acerca de
 Respecto a los integrantes del proyecto, se encuentran los estudiantes:
