@@ -5,8 +5,13 @@ import sys
 sys.path.append('..')
 
 import argparse
-from tec.ic.ia.pc1.g03 import *
-from p1.modelo.nearest_neighbors import *
+import numpy as np
+
+from tec.ic.ia.pc1.g03 import generar_muestra_pais
+from tec.ic.ia.pc1.g03 import generar_muestra_provincia
+
+from p1.modelo.arbol import analisis_arbol_decision
+from p1.modelo.nearest_neighbors import analisis_knn
 
 # -----------------------------------------------------------------------------
 
@@ -55,11 +60,12 @@ def obtener_argumentos():
 
     # Árboles de decisión
     parser.add_argument('--arbol', action='store_true')
-    parser.add_argument('--umbral-poda', nargs=1, type=float)
+    parser.add_argument('--umbral-poda', nargs=1, type=float, default=20)
 
     # KNN - K Nearest Neighbors
     parser.add_argument('--knn', action='store_true')
     parser.add_argument('--k', nargs=1, type=int, default=5)
+    parser.add_argument('--max-profundidad', nargs=1, type=int, default=50)
 
     return parser.parse_args()
 
@@ -109,7 +115,8 @@ def main():
     if args.knn:
         analisis_knn(args, datos)
 
-    # TODO: Agregar aquí los demás 'if'
+    elif args.arbol:
+        analisis_arbol_decision(args, datos)
 
 # -----------------------------------------------------------------------------
 
