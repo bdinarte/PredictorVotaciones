@@ -414,8 +414,8 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
         best_model_idx = __select_best_model(accuracies, losses)
 
         predictions = nn_predict(models[best_model_idx], training_data)
-        holdout_acc, h_predictions = nn_predict(models[best_model_idx],
-                                                test_data)
+        holdout_acc, h_predictions = nn_validar_alt(models[best_model_idx],
+                                                    test_data)
         print('\nPrecisión para el set de pruebas aparte: ' + str(holdout_acc))
 
         if event == 'r1':
