@@ -441,7 +441,7 @@ def podar_arbol(nodo_raiz, nodo, set_datos, mejor_puntaje):
         nodo.nodo_padre.clasificacion = nodo.clasificacion
 
         if nodo.peso < 20:
-            nuevo_puntaje = validar_arbol(nodo_raiz, set_datos)
+            nuevo_puntaje, predic = validar_arbol(nodo_raiz, set_datos)
         else:
             nuevo_puntaje = 0
 
