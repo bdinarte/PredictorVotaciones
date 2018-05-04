@@ -336,7 +336,7 @@ def run_reg_log(data, normalization='os', test_percent=20,
     result_df = result_df.assign(PREDICCION_R2_CON_R1=Series(predictions))
 
     # Se guarda el archivo con las 4 columnas de la especificación
-    final_filename = os.path.join("..", "archivos", prefix + ".csv")
+    final_filename = os.path.join("archivos", prefix + ".csv")
     result_df.to_csv(final_filename, index=False, header=True)
 
 

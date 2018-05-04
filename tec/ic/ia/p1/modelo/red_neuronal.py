@@ -421,7 +421,7 @@ def run_nn(data, normalization='os', test_percent=20, layers=3,
         rmtree(_prefix, ignore_errors=True)
 
     # Se guarda el archivo con las 4 columnas de la especificación
-    final_filename = os.path.join("..", "archivos", prefix + ".csv")
+    final_filename = os.path.join("archivos", prefix + ".csv")
     result_df.to_csv(final_filename, index=False, header=True)
 
 
