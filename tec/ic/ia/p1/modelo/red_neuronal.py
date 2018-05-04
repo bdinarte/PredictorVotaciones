@@ -3,7 +3,7 @@ import os
 import sys
 sys.path.append('../..')
 
-from pandas import DataFrame
+from pandas import DataFrame, Series, concat
 from datetime import datetime
 
 import tensorflow as tf
@@ -148,7 +148,7 @@ def nn_entrenar(model, train_data, prefix):
     if __display_console_info:
         __show_graphics(loss_for_training, accuracy_for_training)
 
-    return model
+    return model, eval('{:.3f}'.format(loss_for_training[-1]))
 
 
 def nn_validar(model, validation_data, prefix):
@@ -169,6 +169,25 @@ def nn_validar(model, validation_data, prefix):
     #
     # retorna un flotante con precision 3
     return eval('{:.3}'.format(test_accuracy.result()))
+
+
+def nn_validar_alt(model, validation_data):
+
+    predictions = nn_predict(model, validation_data)
+
+    if __predicting == 'r1':
+        dicc = id_to_partidos_r1()
+        true_vals = validation_data['VOTO_R1'].values.tolist()
+    else:
+        dicc = id_to_partidos_r2()
+        true_vals = validation_data['VOTO_R2'].values.tolist()
+
+    rights = 0
+    for pred, val in zip(predictions, true_vals):
+        if pred == dicc[val]:
+            rights += 1
+
+    return rights / len(predictions)
 
 
 def nn_predict(model, df_data):
@@ -201,26 +220,6 @@ def nn_predict(model, df_data):
         _predictions.append('{}'.format(label))
 
     return _predictions
-
-
-def nn_validar_alt(model, validation_data, prefix):
-
-    predictions = nn_predict(model, validation_data)
-
-    if __predicting == 'r1':
-        dicc = id_to_partidos_r1()
-        true_vals = validation_data['VOTO_R1'].values.tolist()
-    else:
-        dicc = id_to_partidos_r2()
-        true_vals = validation_data['VOTO_R2'].values.tolist()
-
-    rights = 0
-    for pred, val in zip(predictions, true_vals):
-        if pred == dicc[val]:
-            rights += 1
-
-    print('')
-    return rights / len(predictions)
 
 
 def nn_normalize(data_list, normalization):
@@ -332,9 +331,23 @@ def __save_data_file(df, prefix):
     return filename
 
 
+def __select_best_model(accuracies, losses):
+    """
+    Basado en 2 listas con precisión y pérdida, escoge el índice que
+    alberga la mejor precisión, y mejor pérdida entre las que comparten mejor
+    precisión
+    :param accuracies: lista de precisiones
+    :param losses: lista de pérdidas
+    :return: un entero, indice del mejor modelo
+    """
+    losses = [loss / max(losses) for loss in losses]
+    losses = [1 - loss for loss in losses]
+    addition = [a+l for a, l in zip(accuracies, losses)]
+    return addition.index(max(addition))
+
+
 def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
-           units_per_layer=5, activation_f='relu', activation_out='',
-           predicting='r1', prefix='nn_', provincia=''):
+           units_per_layer=5, activation_f='relu', prefix='nn_', provincia=''):
     #
     # generar y normalizar las muestras
     if provincia:
@@ -343,6 +356,7 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
         data = generar_muestra_pais(sample_size)
 
     df_data = nn_normalize(data, normalization)
+    data = DataFrame(data, columns=data_columns)
     #
     # separar un porcentaje para entrenar y uno de validar
     training_data = df_data.sample(frac=(1 - test_percent))
@@ -356,27 +370,58 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
         *(training_data[x].values.tolist() for x in training_data.columns)))
 
     k_groups = __split(training_list, __k_fold_amount)
-    models = list()
-    accuracies = list()
-    for v_index in range(__k_fold_amount):
-        _prefix = prefix + '_' + str(v_index)
-        #
-        # instanciar el modelo
-        models.append(neural_network(layer_amount=layers,
-                                     units_per_layer=units_per_layer,
-                                     activation_f=activation_f,
-                                     activation_on_output=activation_out,
-                                     predicting=predicting))
-        v_data, t_subset = agrupar(v_index, k_groups)
-        t_subset = DataFrame(t_subset, columns=data_columns[1:])
-        v_data = DataFrame(v_data, columns=data_columns[1:])
-        nn_entrenar(models[v_index], t_subset, _prefix)
-        accuracies.append(nn_validar_alt(models[v_index], v_data, _prefix))
-        print('Subset ' + str(v_index) + ' completo.')
+    #
+    # agregar la columna de entrenamiento
+    es_entrenamiento = len(training_data) * [1] + len(test_data) * [0]
+    data = data.assign(ES_ENTRENAMIENTO=Series(es_entrenamiento))
+    #
+    # definiendo algunos parametros de entrenamiento
+    events_to_predict = ['r1', 'r2', 'r2_with_r1']
+    activations_outs = ['softmax', 'softmax', '']
+    #
+    # para cada prediccion de ronda realizar cross validation
+    for event, activation_out in zip(events_to_predict, activations_outs):
+        _prefix = prefix + '_' + event
+        models = list()
+        accuracies = list()
+        losses = list()
+        print('\nPrediciendo: ' + event)
+        for v_index in range(__k_fold_amount):
+            #
+            # instanciar el modelo
+            models.append(neural_network(layer_amount=layers,
+                                         units_per_layer=units_per_layer,
+                                         activation_f=activation_f,
+                                         activation_on_output=activation_out,
+                                         predicting=event))
+            v_data, t_subset = agrupar(v_index, k_groups)
+            t_subset = DataFrame(t_subset, columns=data_columns[1:])
+            v_data = DataFrame(v_data, columns=data_columns[1:])
+            _, avg_loss = nn_entrenar(models[v_index], t_subset, _prefix)
+            accuracies.append(nn_validar_alt(models[v_index], v_data))
+            losses.append(avg_loss)
+            print('Subset ' + str(v_index) + ' completo.')
 
-    print('Precisión de cada entrenamiento:')
-    for i in range(__k_fold_amount):
-        print('Subset ' + str(i) + ': ' + str(accuracies[i]))
+        print('Precisión de cada subset:')
+        for i in range(__k_fold_amount):
+            print('Subset ' + str(i) + ': ' + str(accuracies[i]))
+        print('Pérdida de cada subset:')
+        for i in range(__k_fold_amount):
+            print('Subset ' + str(i) + ': ' + str(losses[i]))
 
+        best_model_idx = __select_best_model(accuracies, losses)
 
-run_nn(sample_size=1000, activation_out='softmax', predicting='r2_with_r1')
+        predictions = nn_predict(models[best_model_idx], df_data)
+
+        if event == 'r1':
+            data = data.assign(PREDICCION_R1=Series(predictions))
+        elif event == 'r2':
+            data = data.assign(PREDICCION_R2=Series(predictions))
+        else:
+            data = data.assign(PREDICCION_R2_CON_R1=Series(predictions))
+
+    # Se guarda el archivo con las 4 columnas de la especificación
+    final_filename = os.path.join("..", "archivos", prefix + ".csv")
+    data.to_csv(final_filename, index=False, header=True)
+
+run_nn(sample_size=1000)
