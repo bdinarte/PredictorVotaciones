@@ -11,7 +11,6 @@ import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 
-from tec.ic.ia.pc1.g03 import generar_muestra_pais, generar_muestra_provincia
 from p1.modelo.normalizacion import normalize, categoric_to_numeric
 from p1.modelo.normalizacion import id_to_partidos_r1, id_to_partidos_r2
 from p1.modelo.manejo_archivos import guardar_como_csv
@@ -347,14 +346,14 @@ def __select_best_model(accuracies, losses):
     return addition.index(max(addition))
 
 
-def run_nn(data, normalization='os', test_percent=0.2, layers=3,
-           units_per_layer=5, activation_f='relu', prefix='nn_', provincia=''):
+def run_nn(data, normalization='os', test_percent=20, layers=3,
+           units_per_layer=5, activation_f='relu', prefix='nn_'):
 
     df_data = nn_normalize(data, normalization)
     result_df = DataFrame(data, columns=data_columns)
     #
     # separar un porcentaje para entrenar y uno de validar
-    training_data = df_data.sample(frac=(1 - test_percent))
+    training_data = df_data.sample(frac=(1 - test_percent/100))
     #
     # extraer el conjunto de pruebas
     test_data = df_data.drop(training_data.index)
@@ -431,26 +430,10 @@ def run_nn(data, normalization='os', test_percent=0.2, layers=3,
 
 def analisis_nn(args, datos):
 
-    norm = str(args.normalization[0])
+    run_nn(datos, normalization=args.normalizacion[0],
+           test_percent=args.porcentaje_pruebas[0],
+           layers=args.numero_capas[0],
+           units_per_layer=args.unidades_por_capa[0],
+           activation_f=args.funcion_activacion[0],
+           prefix=args.prefijo[0])
 
-
-    run_nn(datos, normalization=, test_percent=, layers=,
-           units_per_layer=, activation_f=, prefix=)
-
-    print("K Nearest Neighbors")
-    print("Usando k -> " + str(args.k[0]))
-
-    # Para agregar las 4 columnas solicitadas
-    salida = np.concatenate((datos, np.zeros((datos.shape[0], 4))), axis=1)
-
-    k_vecinos = args.k[0]
-    porcentaje_pruebas = args.porcentaje_pruebas[0]
-    prefijo_archivos = "knn" if args.prefijo is None else args.prefijo[0]
-
-    indices = list(range(datos.shape[0]))
-    ind_pruebas, ind_entrenamiento = separar(indices, porcentaje_pruebas)
-
-    # Se llena la columna 'es_entrenamiento'
-    salida[ind_pruebas, 23] = 0
-    salida[ind_entrenamiento, 23] = 1
-run_nn(1000)
