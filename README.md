@@ -27,23 +27,27 @@ Módulo que puede entrenar distintos modelos de clasificación de votantes y gen
 ### Clasificación basada árboles de decisión
 
 #### Ejemplo de un árbol de decisión
-![Con titulo](/imgs/arbol_decision.jpg "Árbol de Decisión")
+![Arbol de Decision](/imgs/arbol_decision.jpg "Árbol de Decisión")
 
 #### Algoritmo de aprendizaje del árbol de decisión
-![Con titulo](/imgs/algoritmo_dts.png "Algoritmo de Aprendizaje")
+![Algoritmo DTs](/imgs/algoritmo_dts.PNG "Algoritmo de Aprendizaje")
 
 #### Entropía
-$$Entropia(s) =  \sum_{i=1}^{n}-p_{i}log_{2}p_{i}$$
+<a href="https://www.codecogs.com/eqnedit.php?latex=Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" title="Entropia(s) = \sum_{i=1}^{n}-p_{i}log_{2}p_{i}" /></a>
 Donde:
 **S**: es una colección de objetos
 **Pi** : es la probabilidad de los posibles valores
 **i**: las posibles respuestas de los objetos
 
 #### Ganancia de Información
+```
 $$Ganancia(A) = I(\frac{p}{p+n}, \frac{n}{p+n}) - Resto(A)$$
+```
 
 #### Resto
+```
 $$Resto(A) = \sum_{i=1}^{v}\frac{p_{i}+n_{i}}{p+n} I(\frac{p_{i}}{p_{i}+n_{i}}, \frac{n_{i}}{p_{i}+n_{i}}) $$
+```
 
 ### Clasificación basada en KNN con Kd-trees
 
