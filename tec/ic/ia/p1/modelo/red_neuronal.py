@@ -117,15 +117,19 @@ def nn_entrenar(model, train_data, prefix):
     #
     # comenzar las pasadas a los datos para entrenar
     for current_walk in range(walk_data_times):
+        #
+        # metricas a utilizarse
         current_walk_loss_avg = tfe.metrics.Mean()
         current_walk_accuracy = tfe.metrics.Accuracy()
-
         for x, y in tfe.Iterator(train_dataset):
+            #
+            # por cada iteración se ejecuta el optimizador
             grads = __grad(model, x, y)
             optimizer.apply_gradients(
                 zip(grads, model.variables),
                 global_step=tf.train.get_or_create_global_step())
-
+            #
+            # ejecutar las métricas del entrenamiento
             current_walk_loss_avg(__loss(model, x, y))
             current_walk_accuracy(tf.argmax(model(x), axis=1,
                                             output_type=tf.int32), y)
@@ -169,16 +173,26 @@ def nn_validar(model, validation_data, prefix):
 
 
 def nn_validar_alt(model, validation_data):
-
+    """
+    funcion de validación manual independiente de tensorflow
+    :param model: modelo a evaluar
+    :param validation_data: dataframe con los datos
+    :return: tupla con precisión del modelo para los datos evaluados y las
+    predicciones realizadas
+    """
+    #
+    # obtener las predicciones
     predictions = nn_predict(model, validation_data)
-
+    #
+    # obtener el diccionario de valores por partido y las etiquetas reales
     if __predicting == 'r1':
         dicc = id_to_partidos_r1()
         true_vals = validation_data['VOTO_R1'].values.tolist()
     else:
         dicc = id_to_partidos_r2()
         true_vals = validation_data['VOTO_R2'].values.tolist()
-
+    #
+    # calcular aciertos
     rights = 0
     for pred, val in zip(predictions, true_vals):
         if pred == dicc[val]:
@@ -195,7 +209,8 @@ def nn_predict(model, df_data):
     :return: TODO: de momento un conteo de etiquetas
     """
     data_list = df_data.values.tolist()
-
+    #
+    # según lo que se predice, se eliminan las etiquetas de los datos
     if __predicting == 'r1':
         num_to_label = id_to_partidos_r1()
         data_to_predict = [row[:-2] for row in data_list]
@@ -205,11 +220,14 @@ def nn_predict(model, df_data):
             data_to_predict = [row[:-1] for row in data_list]
         else:
             data_to_predict = [row[:-2] for row in data_list]
-
+    #
+    # generar el tensor con los datos sin etiqueta
     predict_dataset = tf.convert_to_tensor(data_to_predict)
-
+    #
+    # generar predicciones
     predictions = model(predict_dataset)
-
+    #
+    # se escoge la salidad con la mayor probabilidad
     _predictions = list()
     for i, logits in enumerate(predictions):
         label_id = tf.argmax(logits).numpy()
@@ -244,6 +262,12 @@ def nn_normalize(data_list, normalization):
 
 
 def __nn_build_dataset(data, prefix):
+    """
+    Construcción del set con los tensores para entrenar
+    :param data: dataframe con los datos
+    :param prefix: prefijo de los archivos temporales
+    :return: tensorflow.data.Dataset con tensores
+    """
     #
     # Generar archivos de datos
     filename = __save_data_file(data, prefix)
@@ -257,18 +281,29 @@ def __nn_build_dataset(data, prefix):
 
 
 def __loss(model, x, y):
+    #
+    # función de pérdida
     y_ = model(x)
     return tf.losses.sparse_softmax_cross_entropy(labels=y, logits=y_)
 
 
 def __grad(model, inputs, targets):
+    #
+    # función de optimización
     with tfe.GradientTape() as tape:
         loss_value = __loss(model, inputs, targets)
     return tape.gradient(loss_value, model.variables)
 
 
 def __parse_csv(line):
+    """
+    Función de procesamiento de los datos que genera los tensores
+    :param line: fila
+    :return: etiquetas y atributos
+    """
     global __predicting
+    #
+    # se definen los tipos de dato de cada columna según lo que se predice
     if __predicting == 'r1':
         example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
                             [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
@@ -277,7 +312,8 @@ def __parse_csv(line):
         example_defaults = [[0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
                             [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.],
                             [0.], [0.], [0.], [0.], [0.], [0]]
-
+    #
+    # convertir las entradas a tensores según lo que se está prediciendo
     parsed_line = tf.decode_csv(line, example_defaults)
     if __predicting == 'r1':
         features = tf.reshape(parsed_line[:-2], shape=(20,))
@@ -295,12 +331,15 @@ def __parse_csv(line):
 
 
 def __split(_list, n):
+    #
+    # dividir una lista en N cantidad de listas de tamaño similar
     k, m = divmod(len(_list), n)
     return [_list[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
 
 
 def __show_graphics(loss_results, accuracy_results):
-
+    #
+    # despliegue de gráficos para pérdida y accuracy
     fig, axes = plt.subplots(2, sharex=True, figsize=(12, 8))
     fig.suptitle('Métricas del entrenamiento')
 
@@ -345,7 +384,8 @@ def __select_best_model(accuracies, losses):
 
 def run_nn(data, normalization='os', test_percent=20, layers=3,
            units_per_layer=5, activation_f='relu', prefix='nn_', k_fold=4):
-
+    #
+    # normalización de datos y creación de dataframe de resultados
     df_data = nn_normalize(data, normalization)
     result_df = DataFrame(data, columns=data_columns)
     #
@@ -385,10 +425,16 @@ def run_nn(data, normalization='os', test_percent=20, layers=3,
                                          activation_f=activation_f,
                                          activation_on_output=activation_out,
                                          predicting=event))
+            #
+            # parte de cross validation para separar el test de validacion
             v_data, t_subset = agrupar(v_index, k_groups)
             t_subset = DataFrame(t_subset, columns=data_columns[1:])
             v_data = DataFrame(v_data, columns=data_columns[1:])
+            #
+            # se entrena el modelo
             _, avg_loss = nn_entrenar(models[v_index], t_subset, _prefix)
+            #
+            # validar con el conjunto específico de la iteración
             acc, _ = nn_validar_alt(models[v_index], v_data)
             accuracies.append(acc)
             losses.append(avg_loss)
@@ -400,10 +446,14 @@ def run_nn(data, normalization='os', test_percent=20, layers=3,
         print('Pérdida de cada subset:')
         for i in range(k_fold):
             print('Subset ' + str(i) + ': ' + str(losses[i]))
-
+        #
+        # se escoge el mejor modelo según la precisión y luego la menor pérdida
         best_model_idx = __select_best_model(accuracies, losses)
-
+        #
+        # predecir para los datos iniciales de entrenamiento
         predictions = nn_predict(models[best_model_idx], training_data)
+        #
+        # predecir para el conjunto aparte
         holdout_acc, h_predictions = nn_validar_alt(models[best_model_idx],
                                                     test_data)
         print('\nPrecisión para el set de pruebas aparte: ' + str(holdout_acc))
