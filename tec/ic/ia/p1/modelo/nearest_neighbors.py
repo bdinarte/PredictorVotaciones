@@ -51,7 +51,7 @@ DERECHA = 'F. DERECHA'
 # -----------------------------------------------------------------------------
 
 
-def kdtree(muestras, max_profundidad=50):
+def kdtree(muestras, max_profundidad=100):
     """
     Crea el kd-Tree como un diccionario anidado.
     En cada nodo se parten los datos con base en el atributo que más varia.
@@ -637,7 +637,8 @@ def preprocesar_ronda(datos, ronda):
 # -----------------------------------------------------------------------------
 
 
-def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
+def cross_validation(datos, etiquetas,
+                     k_vecinos, k_segmentos, max_profundidad):
     """
     Los datos se dividen en `k_segmentos`. Se itera k veces el entrenamiento.
     Se elige 1/K para validación en cada iteración. En cada iteración se
@@ -648,13 +649,17 @@ def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
     :param k_segmentos: Cantidad de segmentos en los que se deben dividir
     los datos. Representa también la cantidad de iteraciones.
+    :param max_profundidad: Representa la cantidad de niveles máx del árbol.
 
-    :return: (Arbol, Precision, Predicciones)
+    :return: (arbol, precision_promedio, mejor_precision, predicciones)
         ♣ El árbol que se retorna es el que obtuvo mejor presición
     """
 
     precisiones = list()
     predicciones = list()
+
+    mejor_precision = 0
+    mejor_clasificador = None
 
     indices = list(range(len(datos)))
     segmentos = segmentar(indices, k_segmentos)
@@ -663,9 +668,12 @@ def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
     # diferente para validación, el resto se usa para entrenamiento
     for k in range(len(segmentos)):
 
+        print('\nUtilizando el segmento ', k + 1,
+              ' para realizar la validacion...')
+
         ind_validacion, ind_entrenamiento = agrupar(k, segmentos)
 
-        # Validadción (para el final)
+        # Validadción
         datos_validacion = datos[ind_validacion]
         etiqs_validacion = etiquetas[ind_validacion]
 
@@ -673,32 +681,55 @@ def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
         datos_entrenamiento = datos[ind_entrenamiento]
         etiqs_entrenamiento = etiquetas[ind_entrenamiento]
 
-        # Se entrena el sistema con loa datos y etiquetas de entrenamiento
-        arbol = kdtree((datos_entrenamiento, etiqs_entrenamiento))
+        # Se entrena el modelo (se crea el árbol)
+        clasificador = kdtree(
+            (datos_entrenamiento, etiqs_entrenamiento), max_profundidad)
 
-        # Etiquetas obtenidas del conjunto de validación
-        etiqs_predics = predecir_conjunto(arbol, datos_validacion, k_vecinos)
+        # Se predicen las etiquetas del conjunto de validación
+        etiqs_predics = predecir_conjunto(clasificador,
+                                          datos_validacion, k_vecinos)
+
         predicciones += etiqs_predics
 
-        # Cantidad de etiquetas predecidas correctamente vs predicciones
-        precisiones.append(accuracy_score(etiqs_validacion, etiqs_predics))
+        # Cantidad de etiquetas correctas vs las predecidas
+        precision_actual = accuracy_score(etiqs_validacion, etiqs_predics)
 
-    return np.mean(precisiones), predicciones
+        print('\t -> Precision obtenida ', precision_actual)
+        print('\t -> Mejor precision actual ', mejor_precision)
+
+        if precision_actual >= mejor_precision:
+
+            print('\t****** Se encontró una mejor precisión ******')
+            print('\tSe actualiza el árbol y la precisión')
+
+            mejor_precision = precision_actual
+            mejor_clasificador = clasificador
+
+        precisiones.append(precision_actual)
+
+    return mejor_clasificador, np.mean(precisiones), \
+           mejor_precision, predicciones
 
 # -----------------------------------------------------------------------------
 
 
+@timeit
 def analisis_knn(args, datos):
 
-    print("K Nearest Neighbors")
+    print("\nK Nearest Neighbors - KD-Tree")
     print("Usando k -> " + str(args.k[0]))
 
     # Para agregar las 4 columnas solicitadas
     salida = np.concatenate((datos, np.zeros((datos.shape[0], 4))), axis=1)
 
     k_vecinos = args.k[0]
+    k_segmentos = args.k_segmentos[0]
+    max_profundidad = args.max_profundidad[0]
     porcentaje_pruebas = args.porcentaje_pruebas[0]
     prefijo_archivos = "knn" if args.prefijo is None else args.prefijo[0]
+
+    mejores_precisiones = list()
+    precisiones_promedio = list()
 
     indices = list(range(datos.shape[0]))
     ind_pruebas, ind_entrenamiento = separar(indices, porcentaje_pruebas)
@@ -709,6 +740,13 @@ def analisis_knn(args, datos):
 
     for n_ronda in range(1, 4):
 
+        if n_ronda == 1:
+            print('\nComenzando predicción R1')
+        elif n_ronda == 2:
+            print('\nComenzando predicción R2 sin R1')
+        else:
+            print('\nComenzando predicción R2 con R1')
+
         predicciones = list()
         datos_ronda, etiqs_ronda = preprocesar_ronda(datos, ronda=n_ronda)
 
@@ -716,27 +754,41 @@ def analisis_knn(args, datos):
         datos_entrenamiento = datos_ronda[ind_entrenamiento]
         etiqs_entrenamiento = etiqs_ronda[ind_entrenamiento]
 
-        prec_ronda, predics_ronda = \
+        clasificador, precision_promedio, mejor_precision, predics_ronda = \
             cross_validation(datos_entrenamiento,
                              etiqs_entrenamiento,
-                             k_vecinos, args.k_segmentos[0])
+                             k_vecinos, k_segmentos, max_profundidad)
 
         predicciones += predics_ronda
 
         # Predicciones sobre los datos de pruebas
-        clasificador = kdtree((datos_entrenamiento, etiqs_entrenamiento))
-        predics = predecir_conjunto(clasificador, datos_pruebas, k_vecinos)
-        predicciones = predics + predicciones
+        predics_pruebas = predecir_conjunto(clasificador,
+                                            datos_pruebas, k_vecinos)
+
+        predicciones = predics_pruebas + predicciones
 
         salida[:, 23 + n_ronda] = predicciones
 
-        print("Precisión ronda {} -> {}".format(n_ronda, prec_ronda))
+        mejores_precisiones.append(mejor_precision)
+        precisiones_promedio.append(precision_promedio)
 
     salida = pd.DataFrame(salida, columns=columnas_salida)
 
+    # Precisiones obtenidas en cada ronda
+    print()
+    print("Precisión promedio R1: " + str(precisiones_promedio[0]))
+    print("Precisión promedio R2 sin R1: " + str(precisiones_promedio[1]))
+    print("Precisión promedio R2 con R1: " + str(precisiones_promedio[2]))
+
+    print()
+    print("Mejor precisión R1: " + str(mejores_precisiones[0]))
+    print("Mejor precisión R2 sin R1: " + str(mejores_precisiones[1]))
+    print("Mejor precisión R2 con R1: " + str(mejores_precisiones[2]))
+
     # Se guarda el archivo con las 4 columnas de la especificación
-    nombre_salida = os.path.join("archivos", prefijo_archivos + "_1.csv")
+    nombre_salida = os.path.join("archivos", prefijo_archivos + "_knn.csv")
     salida.to_csv(nombre_salida)
+    print('\nVer resultados en:\n\t', nombre_salida)
 
 
 # -----------------------------------------------------------------------------
