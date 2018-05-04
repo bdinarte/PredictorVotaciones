@@ -200,7 +200,7 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
     atributo_bif = None  # atributo sobre el que se realizara la bifurcacion
     ganancia_max = 0  # ganancia maxima de informacion que podra obtener el atributo
     atributo_bif_value = None  # valor del atributo sobre el que se bifurcara
-    ganancia_min = 0.01  # ganancia minima de informacion que podra obtener el atributo
+    ganancia_min = 0.0001  # ganancia minima de informacion que podra obtener el atributo
 
     # se procede a calcular la entropia del set de datos
     entropia_set_datos = calcular_entropia(set_datos, clasificador)
@@ -216,14 +216,14 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
             # remover valores de atributos redundates
             lista_valores_atributos = list(set(lista_valores_atributos))
 
-            if len(lista_valores_atributos) > 100:
-                lista_valores_atributos = sorted(lista_valores_atributos)
-                total = len(lista_valores_atributos)
-                porcentaje = int(total / 10)
-                nuevos_valores = []
-                for x in range(1, 10):
-                    nuevos_valores.append(lista_valores_atributos[x * porcentaje])
-                    lista_valores_atributos = nuevos_valores
+            # if len(lista_valores_atributos) > 100:
+            #     lista_valores_atributos = sorted(lista_valores_atributos)
+            #     total = len(lista_valores_atributos)
+            #     porcentaje = int(total / 10)
+            #     nuevos_valores = []
+            #     for x in range(0, 9):
+            #         nuevos_valores.append(lista_valores_atributos[x * porcentaje])
+            #         lista_valores_atributos = nuevos_valores
 
             for val in lista_valores_atributos:
                 # calcular la ganancia de informacion si se bifurca en este valor
@@ -241,13 +241,8 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
 
     # atributo_bif es el mejor atributo de acuerdo al calculo de la ganancia de informacion
 
-    if atributo_bif_value is None or atributo_bif is None:
-        print("Hubo un problema. No se pudo encontrar un atributo para hacer la bifurcacion.")
-        print("\tTamanho actual de las muestras: ", len(set_datos.muestras))
-        if len(set_datos.muestras) > 0:
-            print("\tCantidad de atributos faltantes de bifurcacion ", len(set_datos.muestras[0]))
-
-    elif ganancia_max <= ganancia_min or nodo.peso > 20:
+    if ganancia_max <= ganancia_min or nodo.peso > 20\
+            or atributo_bif_value is None or atributo_bif is None:
         nodo.es_hoja = True
         nodo.clasificacion = clasificar_hoja(set_datos, clasificador)
         return nodo
@@ -344,7 +339,7 @@ def calcular_ganancia(set_datos, entropia, val, indice_atributo):
     """
 
     clasificador = set_datos.atributos[indice_atributo]
-    entropia_atributo = 0
+    entropia_atributo = 0.01
     total_muestras = len(set_datos.muestras)
 
     ganancia_set_der = Datos(clasificador)
@@ -372,7 +367,7 @@ def calcular_ganancia(set_datos, entropia, val, indice_atributo):
     entropia_atributo += calcular_entropia(ganancia_set_izq, clasificador) * len(
         ganancia_set_izq.muestras) / total_muestras
 
-    return entropia - entropia_atributo
+    return abs(entropia - entropia_atributo)
 
 
 # -------------------------------------------------------------------------------
@@ -388,11 +383,16 @@ def get_nombre_atributos(indice_atributo, muestras):
     :return: lista de valores que se le pueden asignar al atributo
     """
 
-    lista_atributos = []
+    # lista_atributos = []
 
-    for i in range(len(muestras)):
-        if lista_atributos.count(muestras[i][indice_atributo]) == 0:
-            lista_atributos.append(muestras[i][indice_atributo])
+    lista_atributos = [muestra[indice_atributo] for muestra in muestras]
+
+    # remover valores de atributos redundates
+    lista_atributos = list(set(lista_atributos))
+
+    #for i in range(len(muestras)):
+    #    if lista_atributos.count(muestras[i][indice_atributo]) == 0:
+    #        lista_atributos.append(muestras[i][indice_atributo])
 
     return lista_atributos
 
@@ -647,7 +647,7 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
         # preprocess2(validateset)
         precision, etiqs_predics = validar_arbol(nodo_raiz, validateset)
 
-        print('\nUtilizando el segmento ', k, ' para realizar la validacion')
+        print('\nUtilizando el segmento ', k+1, ' para realizar la validacion')
         print('\t -> Precision obtenida ', precision)
         print('\t -> Mejor precision actual ', mejor_precision)
 
