@@ -641,15 +641,16 @@ def cross_validation(datos, etiquetas, k_vecinos, k_segmentos):
     """
     Los datos se dividen en `k_segmentos`. Se itera k veces el entrenamiento.
     Se elige 1/K para validación en cada iteración. En cada iteración se
-    obtiene la precision. Se obtiene el promedio de precisiones junto con
-    cada una de las predicciones relizadas.
+    obtiene la precision.
 
     :param datos: Matriz de entrenamien N x M
     :param etiquetas: Vector tamaño N
     :param k_vecinos: Cantidad máxima de vecinos más cercanos
     :param k_segmentos: Cantidad de segmentos en los que se deben dividir
     los datos. Representa también la cantidad de iteraciones.
-    :return: (Precision, Predicciones)
+
+    :return: (Arbol, Precision, Predicciones)
+        ♣ El árbol que se retorna es el que obtuvo mejor presición
     """
 
     precisiones = list()
