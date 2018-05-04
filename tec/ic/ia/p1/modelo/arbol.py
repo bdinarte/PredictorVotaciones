@@ -7,15 +7,25 @@ from collections import Counter
 # -------------------------------------------------------------------------------
 
 class Datos:
-    """
-    Clase que contendra el conjunto de datos(muestras, atributos, la meta, etc)
-    que seran utlizadas para generar el arbol
-    """
     def __init__(self, clasificador):
+        """
+        Clase que contendra el conjunto de datos(muestras, atributos, la meta, etc)
+        que seran utlizadas para generar el arbol
+        :param clasificador: es el atributo meta(Goal) sobre el que se basa el modelo de clasificacion
+        """
+        # Es el conjunto de muestras generadas por el simulador
         self.muestras = []
+
+        # Se puede ver como el conjunto de atributos que identifican cada columna de las muestras
         self.atributos = []
+
+        # Indica por cada atributo si el mismo es numerico o no
         self.tipos_atributos = []
+
+        # Es el atributo meta sobre el que se basa el modelo de calsificacion
         self.clasificador = clasificador
+
+        # indica la posicion en la que se encuentra el atributo meta
         self.indice_clasificador = None
 
 # -------------------------------------------------------------------------------
@@ -83,6 +93,17 @@ def preprocess2(set_datos):
 class NodoArbol:
     def __init__(self, es_hoja, clasificacion, atributo_bif_index, atributo_bif_value,
                  nodo_padre, hijo_der, hijo_izq, peso):
+        """
+        Clase que representa los nodos del arbol que sera utilizado para implementar el modelo DT
+        :param es_hoja: atributo que indica si el nodo se encuentra en el ultimo nivel(es hoja)
+        :param clasificacion: es el valor meta con el que se clasifica el nodo
+        :param atributo_bif_index: indice del atributo sobre el que se esta haciendo la bifurcacion
+        :param atributo_bif_value: valor del atributo sobre el que se esta haciendo la bifurcacion
+        :param nodo_padre: indicador del nodo predecesor
+        :param hijo_der: nodo que se encuentra al lado derecho (lado mayor) en la bifurcacion
+        :param hijo_izq: nodo que se encuentra al lado izquierdo (lado menor) en la bifurcacion
+        :param peso: es el nivel de profundidad en el que se encuentra el nodo segun el nodo raiz
+        """
         self.es_hoja = True
         self.clasificacion = None
         self.atributo_bif = None
@@ -97,6 +118,21 @@ class NodoArbol:
 # -------------------------------------------------------------------------------
 
 def crear_arbol_decision(set_datos, nodo_padre, clasificador):
+    """
+    Funcion encargada de la construccion del arbol de decision, que se basa en un conjunto de muestras
+    observadas, un nodo padre que al principio de la ejecucion sera nulo, y que con forme se va ejecutando
+    la recursion, el arbol se ira construyendose al anidar nodos.
+    Se tiene que tener claro que el clasificador hace refenrencia al atributo sobre el cual se basa el
+    modelo que se esta construyendo, es decir es el valor a predecir en el proceso de testing.
+
+    :param set_datos: es el conjunto de muestras, atributos y demas elementos que se utilizaran para
+    generar el modelo de arbol de decision
+    :param nodo_padre: es el nodo raiz sobre el que se creara una nueva bifurcacion o se determinara que
+    es un nodo hoja
+    :param clasificador: es el atributo sobre el que se va clasificar en el modelo
+    :return: el nodo raiz del arbol de decision una vez que se encuentra totalmente entrenado
+    """
+    
     nodo = NodoArbol(True, None, None, None, nodo_padre, None, None, 0)
     if nodo_padre is None:
         nodo.peso = 0
@@ -116,10 +152,12 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
     else:
         nodo.es_hoja = False
 
-    atributo_bif = None
-    ganancia_max = 0  # The gain given by the best attribute
-    atributo_bif_value = None
-    ganancia_min = 0.01
+    atributo_bif = None         # atributo sobre el que se realizara la bifurcacion
+    ganancia_max = 0            # ganancia maxima de informacion que podra obtener el atributo
+    atributo_bif_value = None   # valor del atributo sobre el que se bifurcara
+    ganancia_min = 0.01         # ganancia minima de informacion que podra obtener el atributo
+
+    # se procede a calcular la entropia del set de datos
     entropia_set_datos = calcular_entropia(set_datos, clasificador)
     for indice_atributo in range(len(set_datos.muestras[0])):
 
@@ -127,10 +165,10 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
             ganancia_max_temp = 0
             atributo_bif_value_temp = None
             
-            # these are the values we can split on, now we must find the best one
-            lista_valores_atributos = [example[indice_atributo] for example in set_datos.muestras]
+            # conjunto de valores sobre los que se podran realizar bifurcaciones
+            lista_valores_atributos = [muestra[indice_atributo] for muestra in set_datos.muestras]
 
-            # remove duplicates from list of all attribute values
+            # remover valores de atributos redundates
             lista_valores_atributos = list(set(lista_valores_atributos))
 
             if len(lista_valores_atributos) > 100:
@@ -143,11 +181,10 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
                     lista_valores_atributos = nuevos_valores
 
             for val in lista_valores_atributos:
-                # calculate the gain if we split on this value
-                # if gain is greater than ganancia_max_temp, save this gain and this value
-                ganancia_local = calcular_ganancia(set_datos, entropia_set_datos, val,
-                                       indice_atributo)  # calculate the gain if we split on this value
+                # calcular la ganancia de informacion si se bifurca en este valor
+                ganancia_local = calcular_ganancia(set_datos, entropia_set_datos, val, indice_atributo)
 
+                # si la ganancia es mejor que la ganancia_max_temp, se guarda la ganancia y el valor
                 if ganancia_local >= ganancia_max_temp:
                     ganancia_max_temp = ganancia_local
                     atributo_bif_value_temp = val
@@ -157,7 +194,8 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
                 atributo_bif_value = atributo_bif_value_temp
                 atributo_bif = indice_atributo
 
-    # atributo_bif is now the best attribute according to our gain metric
+    # atributo_bif es el mejor atributo de acuerdo al calculo de la ganancia de informacion
+
     if atributo_bif_value is None or atributo_bif is None:
         print("Hubo un problema. No se pudo encontrar un atributo para hacer la bifurcacion.")
         print("\tTamanho actual de las muestras: ", len(set_datos.muestras))
@@ -173,13 +211,15 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
     nodo.atributo_bif = set_datos.atributos[atributo_bif]
     nodo.atributo_bif_value = atributo_bif_value
 
-    # currently doing one split per nodo so only two datasets are created
+    # se crean dos conjuntos de datos, que seran las bifurcaciones del nodo
     set_datos_der = Datos(clasificador)
     set_datos_izq = Datos(clasificador)
 
+    # se le anhaden el conjunto de atributos que tienen las muestras
     set_datos_der.atributos = set_datos.atributos
     set_datos_izq.atributos = set_datos.atributos
 
+    # se le agregan los tipos de atributos que tienen las muestras
     set_datos_der.tipos_atributos = set_datos.tipos_atributos
     set_datos_izq.tipos_atributos = set_datos.tipos_atributos
 
@@ -190,15 +230,25 @@ def crear_arbol_decision(set_datos, nodo_padre, clasificador):
             elif atributo_bif is not None:
                 set_datos_izq.muestras.append(muestra)
 
+    # llamada recursiva para crear los siguientes nodos
     nodo.hijo_der = crear_arbol_decision(set_datos_der, nodo, clasificador)
     nodo.hijo_izq = crear_arbol_decision(set_datos_izq, nodo, clasificador)
 
+    # se devuelve el nodo raiz del arbol de decision que ha sido creado
     return nodo
 
 
 # -------------------------------------------------------------------------------
 
 def clasificar_hoja(set_datos, clasificador):
+    """
+    Funcion utilizada para determinar el valor que toma una dterminada hoja
+    :param set_datos: conjunto de muestras, atributos y demas datos sobre los que se determinara
+    el valor de clasificacion de la hoja
+    :param clasificador: es el atributo meta sobre el que se basa el modelo
+    :return: valor de clasificacion que se le asignara al nodo hoja
+    """
+
     cant_valores_distintos = contar_valores_distintos(set_datos.muestras, set_datos.atributos, clasificador)
     total = len(set_datos.muestras)
     diferencia = total - cant_valores_distintos
@@ -211,6 +261,14 @@ def clasificar_hoja(set_datos, clasificador):
 # -------------------------------------------------------------------------------
 
 def calcular_entropia(set_datos, clasificador):
+    """
+    Calcula el valor de entropia del set de datos que son pasados por parametros, esto segun la formula
+    de entropia que aparece en el libro IA A Modern Approach
+    :param set_datos: es el conjunto de datos sobre los que se determinara la entropia
+    :param clasificador: es el atributo meta sobre el que se basa el modelo
+    :return: valor de entropia que se obtiene a partir de los datos de entrada
+    """
+
     cant_valores_distintos = contar_valores_distintos(set_datos.muestras, set_datos.atributos, clasificador)
     total_muestras= len(set_datos.muestras)
 
@@ -229,6 +287,17 @@ def calcular_entropia(set_datos, clasificador):
 # -------------------------------------------------------------------------------
 
 def calcular_ganancia(set_datos, entropia, val, indice_atributo):
+    """
+    Funcion utilizada para calcular la ganancia de informacion de un determinado
+    valor dentro del conjunto de datos
+    :param set_datos: conjunto de datos sobre los que se determina la ganancia de informacion del atributo
+    :param entropia: valor de entropia que se obtiene del set de datos con que se esta constuyendo el arbol
+    :param val: valor al que se le determinara la ganancia de informacion
+    :param indice_atributo: posicion que tiene en el conjunto de atributos, la columna sobre la que se esta
+    determinando la ganancia de informacion
+    :return: valor de ganancia de informacion
+    """
+
     clasificador = set_datos.atributos[indice_atributo]
     entropia_atributo = 0
     total_muestras = len(set_datos.muestras)
@@ -266,12 +335,12 @@ def calcular_ganancia(set_datos, entropia, val, indice_atributo):
 def get_nombre_atributos(indice_atributo, muestras):
     """
     Funcion utilizada para obtener el conjunto de valores posibles
-    qiue puede obtener un determinado atributo según el conjunto de
+    que puede obtener un determinado atributo según el conjunto de
     datos observados con que se esta entrenando el modelo
     :param indice_atributo: Es el indice del atributo sobre el cual se tomara la columna respectiva
     y se determinaran los posibles valores que pueden obtener las muestras
     :param muestras: es el conjunto de muestras observadas
-    :return: lista de atributos que se le pueden asignar a la columna atributo_columna
+    :return: lista de valores que se le pueden asignar al atributo
     """
 
     lista_atributos = []
@@ -286,7 +355,15 @@ def get_nombre_atributos(indice_atributo, muestras):
 # -------------------------------------------------------------------------------
 
 def contar_valores_distintos(muestras, atributos, clasificador):
-    # find index of clasificador
+    """
+    Funcion utilizada para contar la cantidad de valores distintos
+    que se pueden asignar a un determinado atributo
+    :param muestras: conjunto de muestras observadas con las que se esta entrenando el sistema
+    :param atributos: conjunto de etiquetas que representan los atributos del set de datos
+    :param clasificador: es el atributo meta sobre el que se basa el modelo
+    :return: cantidad de valores posibles que se le pueden asignar
+    """
+
     indice_clasificador = atributos.index(clasificador)
 
     lista_atributos = get_nombre_atributos(indice_clasificador, muestras)
@@ -299,33 +376,51 @@ def contar_valores_distintos(muestras, atributos, clasificador):
 # -------------------------------------------------------------------------------
 
 def podar_arbol(nodo_raiz, nodo, set_datos, mejor_puntaje):
-    # if nodo is a leaf
+    """
+    Funcion de poda del arbol, que se encarga de eliminar nodos
+    que no aportan demasiada informacion al arbol de decision
+    :param nodo_raiz: nodo raiz del arbol
+    :param nodo: es el mismo nodo raiz del arbol
+    :param set_datos: es el conjunto de datos con que se entreno el modelo
+    :param mejor_puntaje: es el valor actual de precision que tiene el modelo,
+    y sobre el cual se intentara mejorar
+    :return: nuevo puntaje de precision que obtiene el arbol
+    """
+
+    # si el nodo es una hoja
     if nodo.es_hoja:
-        # run validar_arbol on a tree with the nodes nodo_padre as a leaf with its clasificacion
+
+        # ejecutar la funcion validar_arbol sobre el arbol
+        # con nodo_padre como la hoja con la clasificacion actual
         nodo.nodo_padre.es_hoja = True
         nodo.nodo_padre.clasificacion = nodo.clasificacion
+
         if nodo.peso < 20:
             nuevo_puntaje = validar_arbol(nodo_raiz, set_datos)
         else:
             nuevo_puntaje = 0
 
-        # if its better, change it
+        # si el nuevo puntaje es mejor, cambiarlos
         if nuevo_puntaje >= mejor_puntaje:
             return nuevo_puntaje
         else:
             nodo.nodo_padre.es_hoja = False
             nodo.nodo_padre.clasificacion = None
             return mejor_puntaje
-    # if its not a leaf
+
+    # si no es una hoja
     else:
-        # prune tree(nodo.hijo_der)
+        # podar el arbol con el hijo derecho
         nuevo_puntaje = podar_arbol(nodo_raiz, nodo.hijo_der, set_datos, mejor_puntaje)
-        # if its now a leaf, return
+
+        # si es una hoja, devolverlo
         if nodo.es_hoja:
             return nuevo_puntaje
-        # prune tree(nodo.hijo_izq)
+
+        # podar el arbol con el hijo izquierdo
         nuevo_puntaje = podar_arbol(nodo_raiz, nodo.hijo_izq, set_datos, nuevo_puntaje)
-        # if its now a leaf, return
+
+        # si es una hoja, devolverlo
         if nodo.es_hoja:
             return nuevo_puntaje
 
