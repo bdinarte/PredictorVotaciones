@@ -347,7 +347,7 @@ def __select_best_model(accuracies, losses):
 
 
 def run_nn(data, normalization='os', test_percent=20, layers=3,
-           units_per_layer=5, activation_f='relu', prefix='nn_', provincia=''):
+           units_per_layer=5, activation_f='relu', prefix='nn_'):
 
     df_data = nn_normalize(data, normalization)
     result_df = DataFrame(data, columns=data_columns)
