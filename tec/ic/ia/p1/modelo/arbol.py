@@ -612,6 +612,9 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
     # Se hacen k iteraciones. En cada iteración se usa un segmento
     # diferente para validación, el resto se usa para entrenamiento
     for k in range(len(segmentos)):
+
+        print('\nUtilizando el segmento ', k + 1, ' para realizar la validacion...')
+
         ind_validacion, ind_entrenamiento = agrupar(k, segmentos)
 
         datos_validacion = muestras_entrenamiento[ind_validacion]
@@ -633,6 +636,7 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
                     range(len(set_datos.atributos))[-1]
 
         nodo_raiz = crear_arbol_decision(set_datos, None, clasificador)
+
         validateset = Datos(clasificador)
         validateset.muestras = datos_validacion
         validateset.atributos = atributos
@@ -644,15 +648,13 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
             else:
                 validateset.indice_clasificador = range(len(validateset.atributos))[-1]
 
-        # preprocess2(validateset)
         precision, etiqs_predics = validar_arbol(nodo_raiz, validateset)
 
-        print('\nUtilizando el segmento ', k+1, ' para realizar la validacion')
         print('\t -> Precision obtenida ', precision)
         print('\t -> Mejor precision actual ', mejor_precision)
 
         if mejor_precision < precision:
-            print('****** Se encontro una mejor precision ******\n\tSe actualiza el arbol y la precision')
+            print('\t****** Se encontro una mejor precision ******\n\tSe actualiza el arbol y la precision')
             mejor_precision = precision
             mejor_arbol = nodo_raiz
 
@@ -686,9 +688,9 @@ def analisis_arbol_decision(args, muestras):
         predicciones = list()
 
         if n_ronda == 3:
-            print('Comenzando prediccion ronda 2 con primeras votaciones')
+            print('\nComenzando prediccion ronda 2 con primeras votaciones')
         else:
-            print('Comenzando prediccion ronda ', n_ronda, ' sin la otra ronda')
+            print('\nComenzando prediccion ronda ', n_ronda, ' sin la otra ronda')
 
         print('Dividiendo los datos pruebas-entrenamiento')
         muestras_ronda, atributos = preprocesar_ronda(muestras, ronda=n_ronda)
@@ -701,7 +703,7 @@ def analisis_arbol_decision(args, muestras):
 
         predicciones += predic_generadas
 
-        print('Probando el modelo')
+        print('\nProbando el modelo')
         predicciones_prueba = generar_test(muestras_pruebas, atributos, arbol)
 
         predicciones = predicciones_prueba + predicciones
@@ -710,9 +712,9 @@ def analisis_arbol_decision(args, muestras):
 
     salida = pd.DataFrame(salida, columns=columnas_salida)
 
-    print('Generando archivo de salida')
+    print('\nGenerando archivo de salida')
     # Se guarda el archivo con las 4 columnas de la especificación
-    nombre_salida = os.path.join("archivos", prefijo_archivos + "_1.csv")
+    nombre_salida = os.path.join("archivos", prefijo_archivos + ".csv")
     salida.to_csv(nombre_salida)
 
     print('\tVer resultados en:\n\t', nombre_salida)
@@ -740,5 +742,5 @@ def generar_test(muestras, atributos, arbol):
     for muestra in testset.muestras:
         muestra[testset.indice_clasificador] = probar_muestra(muestra, arbol, testset.indice_clasificador)
 
-    print('Predicciones finalizadas')
+    print('\tPredicciones finalizadas')
     return testset.muestras[:, -1].tolist()
