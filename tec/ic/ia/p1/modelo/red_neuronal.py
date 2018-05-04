@@ -347,14 +347,8 @@ def __select_best_model(accuracies, losses):
     return addition.index(max(addition))
 
 
-def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
+def run_nn(data, normalization='os', test_percent=0.2, layers=3,
            units_per_layer=5, activation_f='relu', prefix='nn_', provincia=''):
-    #
-    # generar y normalizar las muestras
-    if provincia:
-        data = generar_muestra_provincia(sample_size, provincia)
-    else:
-        data = generar_muestra_pais(sample_size)
 
     df_data = nn_normalize(data, normalization)
     result_df = DataFrame(data, columns=data_columns)
@@ -435,4 +429,28 @@ def run_nn(sample_size=3000, normalization='os', test_percent=0.2, layers=3,
     result_df.to_csv(final_filename, index=False, header=True)
 
 
+def analisis_nn(args, datos):
+
+    norm = str(args.normalization[0])
+
+
+    run_nn(datos, normalization=, test_percent=, layers=,
+           units_per_layer=, activation_f=, prefix=)
+
+    print("K Nearest Neighbors")
+    print("Usando k -> " + str(args.k[0]))
+
+    # Para agregar las 4 columnas solicitadas
+    salida = np.concatenate((datos, np.zeros((datos.shape[0], 4))), axis=1)
+
+    k_vecinos = args.k[0]
+    porcentaje_pruebas = args.porcentaje_pruebas[0]
+    prefijo_archivos = "knn" if args.prefijo is None else args.prefijo[0]
+
+    indices = list(range(datos.shape[0]))
+    ind_pruebas, ind_entrenamiento = separar(indices, porcentaje_pruebas)
+
+    # Se llena la columna 'es_entrenamiento'
+    salida[ind_pruebas, 23] = 0
+    salida[ind_entrenamiento, 23] = 1
 run_nn(1000)

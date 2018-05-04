@@ -6,7 +6,10 @@ sys.path.append('..')
 
 import argparse
 import numpy as np
-from tec.ic.ia.pc1.g03 import *
+
+from tec.ic.ia.pc1.g03 import generar_muestra_pais
+from tec.ic.ia.pc1.g03 import generar_muestra_provincia
+
 from p1.modelo.arbol import analisis_arbol_decision
 from p1.modelo.nearest_neighbors import analisis_knn
 
@@ -49,9 +52,11 @@ def obtener_argumentos():
 
     # Redes neuronales
     parser.add_argument('--red-neuronal', action='store_true')
-    parser.add_argument('--numero-capas', nargs=1, type=int)
-    parser.add_argument('--unidades-por-capa', nargs=1, type=int)
-    parser.add_argument('--funcion-activacion', nargs='*')
+    parser.add_argument('--numero-capas', nargs=1, type=int, default=3)
+    parser.add_argument('--unidades-por-capa', nargs=1, type=int, default=5)
+    parser.add_argument('--funcion-activacion', nargs=1, type=str,
+                        default='relu')
+    parser.add_argument('--normalizacion', type=str, nargs=1, default='os')
 
     # Árboles de decisión
     parser.add_argument('--arbol', action='store_true')
@@ -60,6 +65,7 @@ def obtener_argumentos():
     # KNN - K Nearest Neighbors
     parser.add_argument('--knn', action='store_true')
     parser.add_argument('--k', nargs=1, type=int, default=5)
+    parser.add_argument('--max-profundidad', nargs=1, type=int, default=50)
 
     return parser.parse_args()
 
