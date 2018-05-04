@@ -409,7 +409,7 @@ def contar_valores_distintos(muestras, atributos, clasificador):
     :return: cantidad de valores posibles que se le pueden asignar
     """
 
-    indice_clasificador = atributos.index(clasificador)
+    indice_clasificador = atributos.tolist().index(clasificador)
 
     lista_atributos = get_nombre_atributos(indice_clasificador, muestras)
 
@@ -624,7 +624,7 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
         set_datos.atributos = atributos
         clasificador = set_datos.atributos[-1]  # GOAL
         set_datos.clasificador = clasificador
-        set_datos.tipos_atributos = np.zeros(len(datos_entrenamiento.shape[1]), dtype=bool)
+        set_datos.tipos_atributos = np.zeros(datos_entrenamiento.shape[1], dtype=bool).tolist()
 
         for a in range(len(set_datos.atributos)):
             if set_datos.atributos[a] == set_datos.clasificador:
@@ -637,7 +637,7 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
         validateset = Datos(clasificador)
         validateset.muestras = datos_validacion
         validateset.atributos = atributos
-        validateset.tipos_atributos = np.zeros(len(datos_validacion.shape[1]), dtype=bool)
+        validateset.tipos_atributos = np.zeros(datos_validacion.shape[1], dtype=bool).tolist()
 
         for a in range(len(validateset.atributos)):
             if validateset.atributos[a] == validateset.clasificador:
@@ -662,7 +662,7 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
 # -----------------------------------------------------------------------------
 
 def analisis_arbol_decision(args, muestras):
-    umbral_poda = args.umbral_poda[0]
+    umbral_poda = args.umbral_poda
     porcentaje_pruebas = args.porcentaje_pruebas[0]
     prefijo_archivos = "arbol" if args.prefijo is None else args.prefijo[0]
 

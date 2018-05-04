@@ -5,9 +5,10 @@ import sys
 sys.path.append('..')
 
 import argparse
+import numpy as np
 from tec.ic.ia.pc1.g03 import *
-from p1.modelo.arbol import *
-from p1.modelo.nearest_neighbors import *
+from p1.modelo.arbol import analisis_arbol_decision
+from p1.modelo.nearest_neighbors import analisis_knn
 
 # -----------------------------------------------------------------------------
 
