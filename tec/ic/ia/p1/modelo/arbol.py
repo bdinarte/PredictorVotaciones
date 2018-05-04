@@ -682,6 +682,9 @@ def analisis_arbol_decision(args, muestras):
     salida[ind_entrenamiento, 23] = 1
 
     for n_ronda in range(1, 4):
+
+        predicciones = list()
+
         if n_ronda == 3:
             print('Comenzando prediccion ronda 2 con primeras votaciones')
         else:
@@ -696,12 +699,14 @@ def analisis_arbol_decision(args, muestras):
         print('Entrenando el modelo')
         arbol, precision, predic_generadas = cross_validation(muestras_entrenamiento, atributos, k_segmentos=10)
 
+        predicciones += predic_generadas
+
         print('Probando el modelo')
         predicciones_prueba = generar_test(muestras_pruebas, atributos, arbol)
 
-        predic_generadas = predicciones_prueba + predic_generadas
+        predicciones = predicciones_prueba + predicciones
 
-        salida[:, 23 + n_ronda] = predic_generadas
+        salida[:, 23 + n_ronda] = predicciones
 
     salida = pd.DataFrame(salida, columns=columnas_salida)
 
@@ -736,4 +741,4 @@ def generar_test(muestras, atributos, arbol):
         muestra[testset.indice_clasificador] = probar_muestra(muestra, arbol, testset.indice_clasificador)
 
     print('Predicciones finalizadas')
-    return testset.muestras
+    return testset.muestras[:, -1].tolist()
