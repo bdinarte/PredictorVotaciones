@@ -47,9 +47,11 @@ def obtener_argumentos():
 
     # Redes neuronales
     parser.add_argument('--red-neuronal', action='store_true')
-    parser.add_argument('--numero-capas', nargs=1, type=int)
-    parser.add_argument('--unidades-por-capa', nargs=1, type=int)
-    parser.add_argument('--funcion-activacion', nargs='*')
+    parser.add_argument('--numero-capas', nargs=1, type=int, default=3)
+    parser.add_argument('--unidades-por-capa', nargs=1, type=int, default=5)
+    parser.add_argument('--funcion-activacion', nargs=1, type=str,
+                        default='relu')
+    parser.add_argument('--normalizacion', type=str, nargs=1, default='os')
 
     # Árboles de decisión
     parser.add_argument('--arbol', action='store_true')
