@@ -41,9 +41,185 @@ Explicación de los parámetros:
 - **k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
 
 ## Reportes de Métodos Implementados
-### Clasificación basada en modelos lineales
+### Clasificación basada en modelos lineales: Regresión Logística
+Este tipo modelo se utiliza para predecir el valor de una variable, cuando dicho valor puede ser uno de un conjunto limitados de opciones. Dicha predicción es realizada con base a un conjunto de atributos de los cuales se espera la variable es dependiente.
+
+Para el presente proyecto se toma como variable dependiente ya sea **el voto para primera ronda** o **el voto para segunda ronda** de una persona según un listado de indicadores cantonales correspondientes a la misma, así como algunos otros atributos personales en su mayoría cualitativos.
+
+### Implementación del modelo
+Para la implementación del modelo de regresión logística se hace uso de la biblioteca de *[Tensorflow 1.8.0](https://www.tensorflow.org)*. En concreto se utiliza un estimador para [clasificación lineal](https://www.tensorflow.org/api_docs/python/tf/estimator/LinearClassifier), en el que el voto emitido por una persona en una ronda específica está dado por los indicadores del cantón en el que emitió dicho voto. Por lo que se asume que vive en el mismo cantón en el que emite el voto. Los atributos tomados en cuenta para cada predicción son los siguientes:
+
+##### Ronda 1 y Ronda 2
+Atributos personales, son atributos categóricos en su mayoría (a excepción del promedio de años de estudio y la edad), lo cual significa que su valor está definido por un conjunto limitado de posibilidades (en este caso `True` o `False` representados por `1` y `0` respectivamente).
+
+> Edad, residencia en zona urbana, género, dependencia económica, estado de su vivienda, condición de hacinamiento, alfabetización, promedio de años que estudió, si se encuentra en educación superior, si trabaja, posee seguro, si es extranjero, discapacidad.
+
+Atributos compartidos entre las personas del mismo cantón, que en su mayoría son atributos numéricos (a excepción del cantón en sí). Sus valores correspondientes son continuos y varían altamente.
+> Cantón, población total, superficie, densidad poblacional, viviendas individuales ocupadas, promedio de ocupantes, porcentaje de viviendas con jefatura femenina y porcentaje de jefatura compartida.
+
+##### Ronda 2 usando resultados de Ronda 1
+Para la tercera predicción realizada se utiliza el voto emitido por cada persona en **ronda 1** como atributo adicional para predecir su voto en **ronda 2**. Por lo tanto se utilizan todos los atributos anteriores de igual forma.
+
+#### Normalización de datos
+Se implementó la [normalización](https://en.wikipedia.org/wiki/Feature_scaling) de los datos ante la existencia de grandes diferencias de rangos para diferentes atributos. Como ejemplo:
+
+ - Edad máxima: 65. Edad mínima: 18. (Años)
+ - Población máxima: ~300 000. Población mínima: ~25 000. (Habitantes)
+
+Para que estas diferencias no sesguen la construcción del modelo, se implementaron diferentes métodos de normalización ya conocidos. La forma de escoger estas para el procesamiento de los datos se encuentra detallada en el manual, como apéndice del documento.
+
+ 1. El más simple es la división de cada valor por el máximo en su mismo atributo. Denominado *scaling over the max value*. Esta define nuevos valores entre `0` y `1`.
+	 1.1 Definida por: $$ x' = \frac{x}{max(x)}$$
+ 2. Se encuentra disponible también la [normalización estándar](https://en.wikipedia.org/wiki/Standard_score). Esta normalización introduce valores negativos `x < 0`, dentro de los datos, además que no define valores entre `0` y `1`.
+	 2.1 Definida por: $$ x' = \frac{x - \mu}{\sigma} $$
+ 3. Finalmente la [re-escala de atributos](https://en.wikipedia.org/wiki/Feature_scaling#Rescaling). Esta normalización no es recomendada si los valores son muy cercanos, pues acentúa las diferencias entre los mismos.
+	3.1 Definida por: $$ x' = \frac{x - min(x)}{max(x)-min(x)} $$
+
+#### Configuración del modelo
+##### Taza de aprendizaje
+Uno de los hiperparámetros configurados para la regresión logística del proyecto es el *learning rate* o taza de aprendizaje. El valor escogido con base en pruebas realizadas se definió como `0.03`, con base en las siguientes observaciones.
+
+ 1. Valores en décimas mostraban efectos negativos en la precisión de los modelos. En ocasiones reduciéndola hasta por 10% o 15%.
+ 2. Valores en milésimas no mostraban cambios significativos en relación a los cambios vistos mediante centésimas.
+ 3. Entre las centésimas, se escoge `0.03` de forma arbitraria, pues los valores cercanos parecen dar resultados no distinguibles ante el ojo no entrenado de los estudiantes.
+
+#### Medidas de rendimiento
+##### Precisión
+La medida principal para cuantificar el desempeño de los modelos implementados fue la precisión. Refiriéndose precisión, a la cantidad de aciertos dividido entre el total de predicciones realizadas.
+
+La precisión tomada en cuenta es la obtenida de la predicción del conjunto de datos para validación, una vez entrenado el modelo. El error de entrenamiento suele tomarse en cuenta únicamente para determinar cuando el modelo ha convergido.
+
+Luego del proceso de [K-Fold Cross Validation](https://en.wikipedia.org/wiki/Cross-validation_%28statistics%29#k-fold_cross-validation), se utiliza la precisión de cada modelo en su validación para determinar cual es el más óptimo, para así generar la predicción de todo el conjunto de datos para generar el archivo de salida solicitado en la especificación del proyecto.
+
+#### Resultados
 
 ### Clasificación basada en redes neuronales
+
+Las redes neuronales tienen gran cantidad de usos, como el reconocimiento de patrones, clasificación de elementos, aproximación de funciones, entre otros más.
+
+Para el presente proyecto se utilizan redes neuronales para predecir un el voto de una persona para primera o segunda ronda de elecciones presidenciales. Esto con base en algunos atributos determinados que pueden tener relación a dicha decisión.
+
+### Implementación del modelo
+Para la implementación del modelo de regresión logística se hace uso de la biblioteca de *[Tensorflow 1.8.0](https://www.tensorflow.org)*. En concreto se utiliza el módulo de [Keras](https://www.tensorflow.org/api_docs/python/tf/keras). Dicho módulo proporciona diferentes componentes entre estimadores, métricas y muchas otras funcionalidades para el desarrollo de modelos. Al igual que con la regresión logística, se busca predecir el voto de elecciones presidenciales según los atributos personales de un votante, así como algunos relacionados al cantón donde vota. Por lo anterior, se asume que vive en el mismo cantón en el que emite el voto. Los atributos tomados en cuenta para cada predicción son los siguientes:
+
+##### Ronda 1 y Ronda 2
+Los atributos categóricos, lo cual significa que su valor está definido por un conjunto limitado de posibilidades (en este caso `True` o `False` representados por `1` y `0` respectivamente), pasaron por un proceso de conversión para su uso apropiado.
+
+Inicialmente estos atributos poseen valores representados con cadenas de texto, pero durante el preprocesamiento, son modificados para seguir las opciones definidas anteriormente. Dicha modificación se realiza pues cada *neurona* y en general la red neuronal, suele operar mediante cálculos matemáticos exclusivamente, lo cual evidentemente requiere de números y no cadenas de texto. Los atributos utilizados son:
+
+> Edad, residencia en zona urbana, género, dependencia económica, estado de su vivienda, condición de hacinamiento, alfabetización, promedio de años que estudió, si se encuentra en educación superior, si trabaja, posee seguro, si es extranjero, discapacidad, población total, superficie, densidad poblacional, viviendas individuales ocupadas, promedio de ocupantes, porcentaje de viviendas con jefatura femenina y porcentaje de jefatura compartida.
+
+##### Ronda 2 usando resultados de Ronda 1
+Para la tercera predicción realizada se utiliza el voto emitido por cada persona en **ronda 1** como atributo adicional para predecir su voto en **ronda 2**. Por lo tanto se utilizan todos los atributos anteriores de igual forma.
+
+#### Normalización de datos
+Se implementó la [normalización](https://en.wikipedia.org/wiki/Feature_scaling) de los datos ante la existencia de grandes diferencias de rangos para diferentes atributos. Como ejemplo:
+
+ - Edad máxima: 65. Edad mínima: 18. (Años)
+ - Población máxima: ~300 000. Población mínima: ~25 000. (Habitantes)
+
+Para que estas diferencias no sesguen la construcción del modelo, se implementaron diferentes métodos de normalización ya conocidos. La forma de escoger estas para el procesamiento de los datos se encuentra detallada en el manual, como apéndice del documento.
+
+ 1. El más simple es la división de cada valor por el máximo en su mismo atributo. Denominado *scaling over the max value*. Esta define nuevos valores entre `0` y `1`.
+	 1.1 Definida por: $$ x' = \frac{x}{max(x)}$$
+ 2. Se encuentra disponible también la [normalización estándar](https://en.wikipedia.org/wiki/Standard_score). Esta normalización introduce valores negativos `x < 0`, dentro de los datos, además que no define valores entre `0` y `1`.
+	 2.1 Definida por: $$ x' = \frac{x - \mu}{\sigma} $$
+3. Finalmente la [re-escala de atributos](https://en.wikipedia.org/wiki/Feature_scaling#Rescaling). Esta normalización no es recomendada si los valores son muy cercanos, pues acentúa las diferencias entre los mismos.
+	3.1 Definida por: $$ x' = \frac{x - min(x)}{max(x)-min(x)} $$
+
+#### Configuración del modelo
+##### Taza de aprendizaje
+Uno de los hiperparámetros configurados para la red neuronal al igual que para la regresión logística, es el *learning rate* o taza de aprendizaje. El valor escogido con base en pruebas realizadas se definió como `0.03`, con base en las siguientes observaciones.
+
+ 1. Valores en décimas mostraban efectos negativos en la precisión de los modelos. En ocasiones reduciéndola hasta por 10% o 15%.
+ 2. Valores en milésimas no mostraban cambios significativos en relación a los cambios vistos mediante centésimas.
+ 3. Entre las centésimas, se escoge `0.03` de forma arbitraria, pues los valores cercanos parecen dar resultados no distinguibles ante el ojo no entrenado de los estudiantes.
+
+##### Epochs
+Como definición general, un *epoch* es una iteración sobre **todos** los ejemplos de una muestra de datos durante el entrenamiento. Las redes neuronales suelen requerir de múltiples *"pasadas"* o iteraciones sobre los datos durante el entrenamiento, antes de que el modelo pueda converger. Luego de las pruebas realizadas se determinó que se cumplen 50 epochs para que la mayoría de modelos alcancen una convergencia suficiente según el criterio de los estudiantes.
+
+Cabe destacar que para algunos modelos se necesitan más de 50 epochs, en ocasiones 70 epochs suelen ser suficientes para que la red alcance el pico de su desempeño, pero las condiciones para que dichos escenarios se den de forma consistente no están claras. Para la predicción de **segunda ronda**, utilizando como atributo el voto de **primera ronda**, 20 epochs suelen ser suficientes para que el modelo alcance un estado cercano a su pico. Por lo tanto, por motivos principalmente de tiempo de ejecución se definen los epochs en una cantidad media. Según lo observado se concluye que la cantidad de epochs depende en gran medida de la aleatoriedad del simulador de datos de votantes.
+
+#### Medidas de rendimiento
+##### Precisión
+La medida principal para cuantificar el desempeño de los modelos implementados fue la precisión. Refiriéndose precisión, a la cantidad de aciertos dividido entre el total de predicciones realizadas.  Al igual que con la regresión logística.
+
+La precisión tomada en cuenta es la obtenida de la predicción del conjunto de datos para validación, una vez entrenado el modelo. El error de entrenamiento suele tomarse en cuenta únicamente para determinar cuando el modelo ha convergido.
+
+Luego del proceso de [K-Fold Cross Validation](https://en.wikipedia.org/wiki/Cross-validation_%28statistics%29#k-fold_cross-validation), se utiliza la precisión de cada modelo en su validación para determinar cual es el más óptimo, para así generar la predicción de todo el conjunto de datos para generar el archivo de salida solicitado en la especificación del proyecto.
+##### Pérdida
+Si la precisión no es suficiente para separar un modelo de otro, pues en ocasiones más de una red maneja la misma precisión posterior a la validación, se utiliza entonces el criterio de la pérdida durante el entrenamiento. Particularme se utiliza una función de [entropía cruzada](https://www.tensorflow.org/api_docs/python/tf/losses/sparse_softmax_cross_entropy), disponible entre los elementos que brinda Tensorflow.
+
+Así entonces se definen los desempates entre redes neuronales de igual precisión durante la validación. Una vez escogido el modelo de red que maximiza la precisión y minimiza la pérdida, se utiliza el mismo para la predicción del conjunto de datos de prueba aparte que se reservó.
+
+#### Resultados
+Dado que cada ejecución del programa genera una simulación de muestra de datos aleatoria, los resultados obtenidos no pueden reproducirse ni siquiera al copiar el comando utilizado para dicha ejecución.
+#### 1
+##### Parámetros de ejecución
+
+    python g03.py --red-neuronal --prefijo red_N --poblacion 1000 --numero-capas 4 --unidades-por-capa 6 --funcion-activacion relu
+[Enlace al archivo de salida.](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/red_N.csv)
+##### Salida de consola
+
+> Duración de generar_muestra_pais: 1.127063512802124
+>
+> Prediciendo: r1
+> ..
+> Prediciendo: r2
+>
+> Precisión de cada subset:
+>
+> Subset 0: 0.5833333333333334
+>
+> Subset 1: 0.6555555555555556
+>
+> Subset 2: 0.5833333333333334
+>
+> Subset 3: 0.6
+>
+> Subset 4: 0.5611111111111111
+>
+> Pérdida de cada subset:
+>
+> Subset 0: 1.28
+>
+> Subset 1: 1.317
+> ..
+> Precisión para el set de pruebas aparte: 0.61
+>
+> Prediciendo: r2_with_r1
+>
+> Precisión de cada subset:
+>
+> Subset 0: 0.9833333333333333
+>
+> Subset 1: 0.9333333333333333
+>
+> Subset 2: 1.0
+>
+> Subset 3: 0.9833333333333333
+>
+> Subset 4: 0.9833333333333333
+>
+> Pérdida de cada subset:
+> ..
+> Precisión para el set de pruebas aparte: 0.99
+
+[Enlace al archivo con la salida completa.](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/salida.txt)
+
+Algunas gráficas que muestran la optimización de la red durante el entrenamiento.
+##### Prediciendo Ronda 2
+Subset 0:
+![Subset 0](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph2_1.png)
+Subset 3:
+![Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph2_4.png)
+##### Prediciendo Ronda 2 con Ronda 1 como atributo
+Subset 0:
+![Subset 0](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_1.png)
+Subset 3:
+![Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_4.png)
+
+De lo anterior se puede apreciar, que como se esperaba, el agregar el voto de **ronda 1** como atributo al modelo, incrementa en gran medida el desempeño del mismo.
 
 ### Clasificación basada árboles de decisión
 
@@ -185,7 +361,7 @@ Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cr
 
 #### Teoría 
 
-La definición de la función $$NN(k, x_i)$$ es sencilla; dado un conjunto de $$N$$ muestras y una consulta $$x_q$$,  se debe retornar la muestra $n_i$ que resulte en la menor distancia  con $x_q$. Esto tiene un costo computacional de $O(N)$ por lo que no resulta eficiente ante grandes cantidades de datos . 
+La definición de la función $NN(k, x_i)$ es sencilla; dado un conjunto de $N$ muestras y una consulta $x_q$,  se debe retornar la muestra $n_i$ que resulte en la menor distancia  con $x_q$. Esto tiene un costo computacional de $O(N)$ por lo que no resulta eficiente ante grandes cantidades de datos . 
 
 Una solución a esto es disminuir el tiempo de consulta por medio de la estructura `k-d tree` . Con esta estructura se puede reducir el espacio de búsqueda a la mitad cada vez que se realiza una iteración. En cada una de estas iteraciones se selecciona un atributo mediante algún criterio, como la varianza, o por medio de alguna secuencia definida. 
 
@@ -193,13 +369,13 @@ En el siguiente ejemplo se puede apreciar el procedimiento utilizado para contru
 
 ![Kd-Tree](/imgs/kd_tree_estructura.png "Kd-Tree")
 
-Primeramente, se dividen las muestras utilizando el atributo $x$ ![#f03c15](https://placehold.it/15/f03c15/000000?text=+), posteriormente se utiliza el atributo $y$ para los dos subconjuntos resultantes (![#FFBF00](https://placehold.it/15/FFBF00/000000?text=+), ![#2E64FE](https://placehold.it/15/#2E64FE/000000?text=+)) recursivamente se aplica el procedimiento hasta que solamente se conserve un par $(x, y)$ en los nodos resultantes ![#f1f1f1](https://placehold.it/15/f1f1f1/000000?text=+). 
+Primeramente, se dividen las muestras utilizando el atributo $x$ ![#f03c15](https://placehold.it/15/f03c15/000000?text=+), posteriormente se utiliza el atributo $y$ para los dos subconjuntos resultantes (![#FFBF00](https://placehold.it/15/FFBF00/000000?text=+), ![#2E64FE](https://placehold.it/15/#2E64FE/000000?text=+)) recursivamente se aplica el procedimiento hasta que solamente se conserve un par $(x, y)$ en los últimos nodos ![#f1f1f1](https://placehold.it/15/f1f1f1/000000?text=+). 
 
 #### Implementación
 
 El `k-d tree` ha sido implementado mediante diccionarios de `Python`.  Esto debido a que era conveniente para depurar, puesto que era fácilmente visualizable mediante la función `pprint`. 
 
-Debido a la necesidad calcular la distancia entre dos vectores, era indispensable que los valores de todas las columnas fueran númericos, por lo que se realiza una etapa de pre-procesamiento que consisten en dos parte. 
+Debido a la necesidad calcular la distancia entre dos vectores, era indispensable que los valores de todas las columnas fueran númericos, por lo que se realiza una etapa de pre-procesamiento que consiste en dos partes. 
 
 La primera se encarga de convertir los atributos categóricos en un representacion númerica. Para ello se usa el algoritmo `One Hot Encoding`, el cual crea una columna adicional con valores binarios por cada categoría posible que pueda tener un atributo en particular. Este fue implementado mediante la función `get_dummies` de la librería `pandas`. Un ejemplo de como funciona el algoritmo se ve reflejado en las siguientes tablas: 
 
@@ -217,9 +393,11 @@ De la tabla anterior, la primera columna debe se convertida a una representació
 | 0             | 1               | 30   | 0    |
 | 0             | 1               | 40   | 0    |
 
-La segunda etapa...
+La segunda etapa consiste en normalizar la matriz, para ello se utiliza la función `MinMaxScaler` de la librería `sklearn`. Esta normalización permite que todos los atributos puedan competir entre sí usando la misma escala. 
 
-El modo de seleccionar el atributo encargado de bifurcar el ábol es elegido calculando la varianza de cada columna de la matriz de muestras.  
+Una vez que se ha realizado el pre-procesamiento la matriz, se puede realizar el entrenamiento del modelo. El procedimiento es el mismo que el descrito anteriormente, sin embargo, la elección del atributo que se usa para realizar las bifurcaciones no está dado al azar, este es elegido calculando la varianza de cada columna de la matriz de muestras.  El que obtiene una mayor varianza refleja que es capaz de dividir los datos de una manera más consistente, por lo que es utilizado. Además, se restringe que el atributo que ha sido utilizado en un nodo pueda ser utilizado en sus nodos hijos. Esto porque podría causar que en todas las bifurcaciones se seleccione repetidas veces el mismo atributo. 
+
+Adicionalmente, se define un máximo en cuanto a la profundidad que puede tener el `k-d tree`. Como es de evidente, al definir una profundidad el tamaño de las hohEsto se hace para poder disminuir la duración de la creacion
 
 #### Resultados obtenidos  
 
