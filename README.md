@@ -144,12 +144,6 @@ Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cr
 
 
 
-##### Porcentaje por partido para Ronda #1, en ejecución#1
-
-##### Porcentaje por partido para Ronda #2, en ejecución#1
-
-##### Porcentaje por partido para Ronda #2 con Ronda#1, en ejecución#1
-
 ---
 ##### Ejecución de ejemplo #2
 Conjunto de parámetros utilizados en la ejecución:
@@ -184,14 +178,6 @@ Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cr
 Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cross validation (K-Fold)
 
 ![pr21e2](/imgs/ex2_precisiones21.png "Preciones Ronda2 con Ronda1 - Ejemplo2")
-
-
-##### Porcentaje por partido para Ronda #1, en ejecución#2
-
-##### Porcentaje por partido para Ronda #2, en ejecución#2
-
-##### Porcentaje por partido para Ronda #2 con Ronda#1, en ejecución#2
-
 
 
 
