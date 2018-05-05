@@ -448,7 +448,7 @@ Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cr
 
 ### Clasificación basada en KNN con Kd-trees
 
-#### Teoría 
+#### Teoría
 
 La definición de la función $NN(k, x_i)$ es sencilla; dado un conjunto de $N$ muestras y una consulta $x_q$,  se debe retornar la muestra $n_i$ que resulte en la menor distancia  con $x_q$. Esto tiene un costo computacional de $O(N)$ por lo que no resulta eficiente ante grandes cantidades de datos . 
 
@@ -456,7 +456,7 @@ Una solución a esto es disminuir el tiempo de consulta por medio de la estructu
 
 En el siguiente ejemplo se puede apreciar el procedimiento utilizado para contruir un `k-d tree` con solamente dos dimensiones. 
 
-![Kd-Tree](/imgs/kd_tree_estructura.png "Kd-Tree")
+![Kd-Tree](C:/Git/PredictorVotaciones/imgs/kd_tree_estructura.png "Kd-Tree")
 
 Primeramente, se dividen las muestras utilizando el atributo $x$ ![#f03c15](https://placehold.it/15/f03c15/000000?text=+), posteriormente se utiliza el atributo $y$ para los dos subconjuntos resultantes (![#FFBF00](https://placehold.it/15/FFBF00/000000?text=+), ![#2E64FE](https://placehold.it/15/#2E64FE/000000?text=+)) recursivamente se aplica el procedimiento hasta que solamente se conserve un par $(x, y)$ en los últimos nodos ![#f1f1f1](https://placehold.it/15/f1f1f1/000000?text=+). 
 
@@ -486,11 +486,19 @@ La segunda etapa consiste en normalizar la matriz, para ello se utiliza la funci
 
 Una vez que se ha realizado el pre-procesamiento la matriz, se puede realizar el entrenamiento del modelo. El procedimiento es el mismo que el descrito anteriormente, sin embargo, la elección del atributo que se usa para realizar las bifurcaciones no está dado al azar, este es elegido calculando la varianza de cada columna de la matriz de muestras.  El que obtiene una mayor varianza refleja que es capaz de dividir los datos de una manera más consistente, por lo que es utilizado. Además, se restringe que el atributo que ha sido utilizado en un nodo pueda ser utilizado en sus nodos hijos. Esto porque podría causar que en todas las bifurcaciones se seleccione repetidas veces el mismo atributo. 
 
-Adicionalmente, se define un máximo en cuanto a la profundidad que puede tener el `k-d tree`. Como es de evidente, al definir una profundidad el tamaño de las hohEsto se hace para poder disminuir la duración de la creacion
+Adicionalmente, se define un máximo en cuanto a la profundidad que puede tener el `k-d tree`. Como es de evidente, al definir una profundidad el tamaño de las hojas se ve incrementado. Esto se hace para poder disminuir la duración de la creación del `k-d tree`, sin embargo se ve afectado el tiempo promedio para predecir. 
 
-#### Resultados obtenidos  
+Después de usar `k-fold-cross-validation` se obtiene el árbol que cuenta con la mayor precisión. Las pruebas finales son realizadas con este árbol. Para predecir una etiqueta a partir de este, se tiene que definir un `k`, que representa la cantidad de vecinos más cercanos que se deben de tomar en cuenta para tomar una decisión. Al hacer $k = 1$ se está ignorando otros vecinos que pueden afectar significativamente la decisión final, por lo que siempre resulta siempre conveniente encontrar el `k` más óptimo para un modelo en particular. 
 
-Se ha ejecutado el modelo utilizando distintos valores de $$k$$,  y con una cantidad de muestras $$n$$. Cada entrenamiento del modelo ha sido realizado utilizando un $10\%$ como porcentaje reservado para pruebas. 
+Al realizar la búsqueda para una consulta $x_q$, se utiliza el nodo raíz, a partir de este se compara el valor del atributo que se utilizó para bifurcar el árbol con el atributo en la misma posición en $x_q$. Si el atributo de la consulta en esta posición es mayor, se limita el área de búsqueda hacia el nodo de la derecha, de lo contrario se limita hacia la izquierda. En algunas ocasiones este valor es igual, por lo que la decisión debe ser tomada calculando la distancia entre la consulta y los nodos hijos del nodo actual. Al llegar a una hoja, se obtienen las distancias entre $x_q$ y los vectores contenidos en los nodos visitados, incluyendo también los vectores que residen en las hojas. Se toman los `k` más cercanos y se realiza una 'votación' para decidir cual es la etiqueta correspondiente a la consulta.  
+
+
+
+#### Resultados obtenidos
+
+Se ha ejecutado el modelo utilizando distintos valores de $$k$$,  y con una cantidad de muestras $$n$$. Cada entrenamiento del modelo ha sido realizado utilizando un $10\%$ como porcentaje reservado para pruebas. Se ha probado con valores de $k$ impares para que no existan empates al momento de contar los "votos". 
+
+**NOTA: **Para enterder las tablas que se presentan a continuación se debe tomar en cuenta que cada celda representa el porcentaje de precisión obtenido por el modelo para la `ronda 1`, `ronda 2 sin ronda 1` y `ronda 2 con ronda 1` en ese mismo orden.
 
 A continuación, un resumen de los promedios de precisión obtenidos mediante el proceso de `k-fold-cross-validation`. 
 
@@ -503,6 +511,8 @@ A continuación, un resumen de los promedios de precisión obtenidos mediante el
 |  4.000  | 19, 52, 52 | 19, 53, 52 | 19, 53, 56 | 23, 52, 53 | 20, 58, 55 |
 | 10.000  | 19, 51, 52 | 19, 53, 54 | 22, 52, 54 | 20, 53, 56 | 22, 57, 58 |
 | 100.000 | 18, 50, 51 | 18, 55, 55 | 21, 58, 57 | 21, 59, 58 | 22, 57, 58 |
+
+De forma general, se puede concluir que el porcentaje promedio de predicciones correctas es sumamente pobre comparado con las redes neuranales, siendo más similar a un árbol de decisión. 
 
 La siguiente tabla resume las mejores precisiones obtenidas mediante el mismo proceso de `k-fold-cross-validation`. 
 
@@ -529,6 +539,7 @@ Finalmente, se presentan por medio de la siguiente tabla, las precisiones obteni
 | 100.000 | 19, 53, 55 | 18, 56, 57 | 23, 58, 59 | 22, 60, 60 | 23, 60, 60 |
 
 ## Acerca de
+
 Integrantes del proyecto:
 
 | Nombre                    | Carné      |
