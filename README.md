@@ -10,37 +10,60 @@ El objetivo de este software es entrenar y evaluar distintos modelos de clasific
 
 1. Abrir la consola de comandos con permisos de administrador.
 
-3. Instalar la versión adecuada de Tensorflow, `cpu` o `gpu` mediante alguno de los siguientes comandos según corresponda:
+2. Instalar la versión adecuada de Tensorflow, `cpu` o `gpu` mediante alguno de los siguientes comandos según corresponda:
 
     > pip install --upgrade tensorflow
 
     > pip install --upgrade tensorflow-gpu
 
+    
+
 
 ## Manual de Uso
 
-#### Ejecución del árbol de decisión
-- Primero que todo, al ejecutar el modelo se debe tener claro que es necesario  proporcionar ciertos parámetros para ajustar el comportamiento del modelo a generar. En este caso son necesarios los que acontecen en el ejemplo:
->--arbol
---umbral-poda
-0.1
---prefijo
-arbolres
---poblacion
-1000
---porcentaje-pruebas
-10
---k-segmentos
-10
+Para ejecutar cualquiera de los modelos es necesario navegar hasta el directorio `tec\ic\ia\p1`. En dicho directorio se debe abrir una terminal o el símbolo del sistema en caso de tratarse de Windows. El usuario debe ejecutar el archivo `g03.py` usando `Python`. Cada uno de los modelos recibe diferentes parámetros, por lo que a continuación se describe un ejemplo de como ejecutar cada uno de ellos. 
 
-Explicación de los parámetros:
-- **--arbol** es el flag para indicar que se debe usar el modelo de clasificación con árboles de decisión.
-- **--umbral-poda** ajusta el umbral de poda a utilizar con el árbol de decisión.
-- **--prefijo** es el nombre del archivo resultante que se plasmará en el documento final con las predicciones.
-- **--poblacion** es el tamaño de la muestra que se va generar para realizar el entrenamiento, la validación y las pruebas.
-- **k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
+Antes de eso se describen los parámetros que todos tienen en común: 
+
+**--prefijo** es el nombre del archivo resultante que se plasmará en el documento final con las predicciones.
+
+**--poblacion** es el tamaño de la muestra que se va generar para realizar el entrenamiento, la validación y las pruebas.
+
+**k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
+
+
+#### Ejecución del árbol de decisión
+
+>--arbol --umbral-poda 0.1 --prefijo arboles --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+
+Explicación de los párametros 
+ **--arbol** es el flag para indicar que se debe usar el modelo de clasificación con árboles de decisión.
+ **--umbral-poda** ajusta el umbral de poda a utilizar con el árbol de decisión.
+
+#### Ejecución de la regresión logística
+
+>--regresión-logistica --l1 -prefijo reg --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+>--regresión-logistica --l2 -prefijo reg--poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+
+**--l1** nivel de regularización l1
+**--l2** nivel de regularización l2
+
+#### Ejecución  KNN-KD-TREE
+
+>-- knn -k 5 -prefijo arboles --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+
+**--k** cantidad de vecinos más cercanos 
+
+#### Ejecución de la red neuronal 
+
+>-- red-neuronal --numero-capas 3 --unidades-por-capa 5 --funcion-activacion relu
+
+**--numero-capas** cantidad de capas de las red 
+**--unidades-por-capa** cantidad de capas de las red 
+**--funcion-activacion** función de activación 
 
 ## Reportes de Métodos Implementados
+
 ### Clasificación basada en modelos lineales: Regresión Logística
 Este tipo modelo se utiliza para predecir el valor de una variable, cuando dicho valor puede ser uno de un conjunto limitados de opciones. Dicha predicción es realizada con base a un conjunto de atributos de los cuales se espera la variable es dependiente.
 
