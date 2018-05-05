@@ -164,32 +164,43 @@ Dado que cada ejecución del programa genera una simulación de muestra de datos
 > Duración de generar_muestra_pais: 1.127063512802124
 >
 > Prediciendo: r1
-..
+> ..
 > Prediciendo: r2
-
+>
 > Precisión de cada subset:
-
+>
 > Subset 0: 0.5833333333333334
-
+>
 > Subset 1: 0.6555555555555556
-
+>
 > Subset 2: 0.5833333333333334
-
+>
 > Subset 3: 0.6
+>
 > Subset 4: 0.5611111111111111
+>
 > Pérdida de cada subset:
+>
 > Subset 0: 1.28
+>
 > Subset 1: 1.317
-..
+> ..
 > Precisión para el set de pruebas aparte: 0.61
 >
 > Prediciendo: r2_with_r1
+>
 > Precisión de cada subset:
+>
 > Subset 0: 0.9833333333333333
+>
 > Subset 1: 0.9333333333333333
+>
 > Subset 2: 1.0
+>
 > Subset 3: 0.9833333333333333
+>
 > Subset 4: 0.9833333333333333
+>
 > Pérdida de cada subset:
 > ..
 > Precisión para el set de pruebas aparte: 0.99
@@ -198,13 +209,17 @@ Dado que cada ejecución del programa genera una simulación de muestra de datos
 
 Algunas gráficas que muestran la optimización de la red durante el entrenamiento.
 ##### Prediciendo Ronda 2
+Subset 0:
 ![Subset 0](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph2_1.png)
+Subset 3:
 ![Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph2_4.png)
 ##### Prediciendo Ronda 2 con Ronda 1 como atributo
+Subset 0:
 ![Subset 0](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_1.png)
+Subset 3:
 ![Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_4.png)
 
-
+De lo anterior se puede apreciar, que como se esperaba, el agregar el voto de **ronda 1** como atributo al modelo, incrementa en gran medida el desempeño del mismo.
 
 ### Clasificación basada árboles de decisión
 
