@@ -110,7 +110,7 @@ Estas predicciones se mencionan a continuación:
 #### Resultados obtenidos
 ##### Ejecución de ejemplo #1
 Conjunto de parámetros utilizados en la ejecución:
-> --arbol --umbral-poda 0.1 --prefijo arbol_ex1 --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+> --arbol --umbral-poda 0.2 --prefijo arbol_ex1 --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
 
 **Nota:** Se debe tener claro que se utilizará el árbol con mejor precisión según el resultado arrojado por medio del proceso de cross-validation que se lleva a cabo en el entrenamiento.
 
@@ -118,6 +118,7 @@ Conjunto de parámetros utilizados en la ejecución:
 - **Mejor Precisión:** 21.11%
 - **Peor Precisión:** 12.22%
 - Gráfico de comportamiento:
+Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cross validation (K-Fold)
 
 ![pr1e1](/imgs/ex1_precisiones1.png "Preciones Ronda 1 - Ejemplo1")
 
@@ -127,6 +128,7 @@ Conjunto de parámetros utilizados en la ejecución:
 - **Mejor Precisión:** 54.44%
 - **Peor Precisión:** 32.22%
 - Gráfico de comportamiento:
+Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cross validation (K-Fold)
 
 ![pr2e1](/imgs/ex1_precisiones2.png "Preciones Ronda 2 - Ejemplo1")
 
@@ -136,21 +138,16 @@ Conjunto de parámetros utilizados en la ejecución:
 - **Mejor Precisión:** 60.33%
 - **Peor Precisión:** 39.54%
 - Gráfico de comportamiento:
+Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cross validation (K-Fold)
 
 ![pr21e1](/imgs/ex1_precisiones21.png "Preciones Ronda2 con Ronda1 - Ejemplo1")
 
 
 
-##### Porcentaje por partido para Ronda #1, en ejecución#1
-
-##### Porcentaje por partido para Ronda #2, en ejecución#1
-
-##### Porcentaje por partido para Ronda #2 con Ronda#1, en ejecución#1
-
 ---
 ##### Ejecución de ejemplo #2
 Conjunto de parámetros utilizados en la ejecución:
-> --arbol --umbral-poda 0.2 --prefijo arbol_ex2 --poblacion 2000 --porcentaje-pruebas 20 --k-segmentos 10
+> --arbol --umbral-poda 0.1 --prefijo arbol_ex2 --poblacion 2000 --porcentaje-pruebas 20 --k-segmentos 10
 
 **Nota:** Se debe tener claro que se utilizará el árbol con mejor precisión según el resultado arrojado por medio del proceso de cross-validation que se lleva a cabo en el entrenamiento.
 
@@ -158,6 +155,7 @@ Conjunto de parámetros utilizados en la ejecución:
 - **Mejor Precisión:** 13,12%
 - **Peor Precisión:** 9,37%
 - Gráfico de comportamiento:
+Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cross validation (K-Fold)
 
 ![pr1e2](/imgs/ex2_precisiones1.png "Preciones Ronda 1 - Ejemplo2")
 
@@ -167,6 +165,7 @@ Conjunto de parámetros utilizados en la ejecución:
 - **Mejor Precisión:** 44,37%
 - **Peor Precisión:** 20%
 - Gráfico de comportamiento:
+Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cross validation (K-Fold)
 
 ![pr2e2](/imgs/ex2_precisiones2.png "Preciones Ronda 2 - Ejemplo2")
 
@@ -176,22 +175,17 @@ Conjunto de parámetros utilizados en la ejecución:
 - **Mejor Precisión:** 42,5%
 - **Peor Precisión:** 19,37%
 - Gráfico de comportamiento:
+Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cross validation (K-Fold)
 
 ![pr21e2](/imgs/ex2_precisiones21.png "Preciones Ronda2 con Ronda1 - Ejemplo2")
-
-
-##### Porcentaje por partido para Ronda #1, en ejecución#2
-
-##### Porcentaje por partido para Ronda #2, en ejecución#2
-
-##### Porcentaje por partido para Ronda #2 con Ronda#1, en ejecución#2
-
 
 
 
 ### Clasificación basada en KNN con Kd-trees
 
-La definición de la función $NN(k, x_i)$ es sencilla :blush:; dado un conjunto de N muestras y una consulta $x_q$,  se debe retornar la muestra $n_i$ que resulte en la menor distancia  con $x_q$. Esto tiene un costo computacional de $O(N)$ por lo que no resulta eficiente ante grandes cantidades de datos :disappointed_relieved:. 
+#### Teoría 
+
+La definición de la función $$NN(k, x_i)$$ es sencilla; dado un conjunto de $$N$$ muestras y una consulta $$x_q$$,  se debe retornar la muestra $n_i$ que resulte en la menor distancia  con $x_q$. Esto tiene un costo computacional de $O(N)$ por lo que no resulta eficiente ante grandes cantidades de datos . 
 
 Una solución a esto es disminuir el tiempo de consulta por medio de la estructura `k-d tree` . Con esta estructura se puede reducir el espacio de búsqueda a la mitad cada vez que se realiza una iteración. En cada una de estas iteraciones se selecciona un atributo mediante algún criterio, como la varianza, o por medio de alguna secuencia definida. 
 
@@ -201,12 +195,79 @@ En el siguiente ejemplo se puede apreciar el procedimiento utilizado para contru
 
 Primeramente, se dividen las muestras utilizando el atributo $x$ ![#f03c15](https://placehold.it/15/f03c15/000000?text=+), posteriormente se utiliza el atributo $y$ para los dos subconjuntos resultantes (![#FFBF00](https://placehold.it/15/FFBF00/000000?text=+), ![#2E64FE](https://placehold.it/15/#2E64FE/000000?text=+)) recursivamente se aplica el procedimiento hasta que solamente se conserve un par $(x, y)$ en los nodos resultantes ![#f1f1f1](https://placehold.it/15/f1f1f1/000000?text=+). 
 
+#### Implementación
 
+El `k-d tree` ha sido implementado mediante diccionarios de `Python`.  Esto debido a que era conveniente para depurar, puesto que era fácilmente visualizable mediante la función `pprint`. 
+
+Debido a la necesidad calcular la distancia entre dos vectores, era indispensable que los valores de todas las columnas fueran númericos, por lo que se realiza una etapa de pre-procesamiento que consisten en dos parte. 
+
+La primera se encarga de convertir los atributos categóricos en un representacion númerica. Para ello se usa el algoritmo `One Hot Encoding`, el cual crea una columna adicional con valores binarios por cada categoría posible que pueda tener un atributo en particular. Este fue implementado mediante la función `get_dummies` de la librería `pandas`. Un ejemplo de como funciona el algoritmo se ve reflejado en las siguientes tablas: 
+
+| Canton    | Edad | Sexo |
+| --------- | ---- | ---- |
+| Paraíso   | 20   | M    |
+| Cervantes | 30   | F    |
+| Cervantes | 40   | F    |
+
+De la tabla anterior, la primera columna debe se convertida a una representación númerica, mientras que la 3 debe ser binaria, por lo que la tabla, luego de este procedimiento, quedaría de la siguiente manera: 
+
+| CantonParaiso | CantonCervantes | Edad | Sexo |
+| ------------- | --------------- | ---- | ---- |
+| 1             | 0               | 20   | 1    |
+| 0             | 1               | 30   | 0    |
+| 0             | 1               | 40   | 0    |
+
+La segunda etapa...
+
+El modo de seleccionar el atributo encargado de bifurcar el ábol es elegido calculando la varianza de cada columna de la matriz de muestras.  
+
+#### Resultados obtenidos  
+
+Se ha ejecutado el modelo utilizando distintos valores de $$k$$,  y con una cantidad de muestras $$n$$. Cada entrenamiento del modelo ha sido realizado utilizando un $10\%$ como porcentaje reservado para pruebas. 
+
+A continuación, un resumen de los promedios de precisión obtenidos mediante el proceso de `k-fold-cross-validation`. 
+
+|   n/k   |     1      |     5      |     11     |     21     |     41     |
+| :-----: | :--------: | :--------: | :--------: | :--------: | :--------: |
+|   100   | 24, 54, 54 | 22, 49, 56 | 19, 50, 45 | 22, 62, 63 | 18, 63, 58 |
+|   500   | 18, 56, 50 | 23, 56, 53 | 22, 61, 56 | 22, 57, 53 | 20, 53, 52 |
+|  1.000  | 20, 48, 53 | 22, 54, 53 | 20, 53, 55 | 23, 53, 54 | 21, 57, 58 |
+|  2.000  | 16, 55, 55 | 20, 56, 57 | 22, 56, 53 | 21, 57, 55 | 20, 55, 51 |
+|  4.000  | 19, 52, 52 | 19, 53, 52 | 19, 53, 56 | 23, 52, 53 | 20, 58, 55 |
+| 10.000  | 19, 51, 52 | 19, 53, 54 | 22, 52, 54 | 20, 53, 56 | 22, 57, 58 |
+| 100.000 | 18, 50, 51 | 18, 55, 55 | 21, 58, 57 | 21, 59, 58 | 22, 57, 58 |
+
+La siguiente tabla resume las mejores precisiones obtenidas mediante el mismo proceso de `k-fold-cross-validation`. 
+
+|   n/k   |     1      |     5      |     11     |     21     |     41     |
+| :-----: | :--------: | :--------: | :--------: | :--------: | :--------: |
+|   100   | 50, 67, 61 | 28, 67, 61 | 33, 61, 67 | 39, 67, 67 | 22, 78, 78 |
+|   500   | 24, 63, 58 | 24, 60, 64 | 26, 66, 66 | 34, 63, 54 | 28, 60, 59 |
+|  1.000  | 26, 55, 56 | 23, 60, 59 | 25, 55, 59 | 32, 62, 63 | 23, 63, 62 |
+|  2.000  | 19, 61, 61 | 21, 61, 61 | 24, 60, 59 | 24, 61, 63 | 22, 59, 60 |
+|  4.000  | 20, 57, 56 | 20, 57, 54 | 21, 59, 61 | 25, 60, 59 | 22, 61, 59 |
+| 10.000  | 20, 53, 53 | 22, 56, 56 | 24, 57, 56 | 23, 61, 62 | 24, 61, 61 |
+| 100.000 | 18, 52, 55 | 19, 57, 57 | 23, 58, 59 | 22, 60, 60 | 28, 59, 59 |
+
+Finalmente, se presentan por medio de la siguiente tabla, las precisiones obtenidas para el conjunto reservado para pruebas. 
+
+|   n/k   |     1      |     5      |     11     |     21     |     41     |
+| :-----: | :--------: | :--------: | :--------: | :--------: | :--------: |
+|   100   | 30, 60, 40 | 20, 60, 60 | 20, 80, 80 | 10, 80, 80 | 30, 70, 70 |
+|   500   | 26, 56, 64 | 22, 50, 52 | 28, 58, 58 | 14, 64, 07 | 22, 60, 60 |
+|  1.000  | 12, 52, 52 | 17, 58, 52 | 19, 54, 60 | 23, 64, 67 | 18, 68, 61 |
+|  2.000  | 20, 64, 57 | 24, 55, 62 | 26, 61, 60 | 22, 59, 57 | 20, 59, 60 |
+|  4.000  | 19, 55, 53 | 20, 59, 55 | 23, 59, 59 | 23, 58, 64 | 24, 64, 63 |
+| 10.000  | 19, 54, 54 | 20, 54, 53 | 24, 57, 59 | 24, 62, 63 | 23, 59, 57 |
+| 100.000 | 19, 53, 55 | 18, 56, 57 | 23, 58, 59 | 22, 60, 60 | 23, 60, 60 |
 
 ## Acerca de
-Respecto a los integrantes del proyecto, se encuentran los estudiantes:
-- Brandon Dinarte Chavarría 2015088894
-- Armando López Cordero     2015125414
-- Julian Salinas Rojas      2015114132
+Integrantes del proyecto:
 
-Mismos que cursan la carrera de Ingeniería en Computación, en el Instituto Tecnológico de Costa Rica.
+| Nombre                    | Carné      |
+| ------------------------- | ---------- |
+| Brandon Dinarte Chavarría | 2015088894 |
+| Armando López Cordero     | 2015125414 |
+| Julian Salinas Rojas      | 2015114132 |
+
+Estudianteas de Ingeniería en Computación, en el Instituto Tecnológico de Costa Rica.
