@@ -164,7 +164,9 @@ Dado que cada ejecución del programa genera una simulación de muestra de datos
 > Duración de generar_muestra_pais: 1.127063512802124
 >
 > Prediciendo: r1
-> ..
+>
+> ...
+>
 > Prediciendo: r2
 >
 > Precisión de cada subset:
@@ -184,7 +186,9 @@ Dado que cada ejecución del programa genera una simulación de muestra de datos
 > Subset 0: 1.28
 >
 > Subset 1: 1.317
-> ..
+>
+> ...
+>
 > Precisión para el set de pruebas aparte: 0.61
 >
 > Prediciendo: r2_with_r1
@@ -202,7 +206,8 @@ Dado que cada ejecución del programa genera una simulación de muestra de datos
 > Subset 4: 0.9833333333333333
 >
 > Pérdida de cada subset:
-> ..
+>
+> ...
 > Precisión para el set de pruebas aparte: 0.99
 
 [Enlace al archivo con la salida completa.](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/salida.txt)
@@ -220,6 +225,90 @@ Subset 3:
 ![Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_4.png)
 
 De lo anterior se puede apreciar, que como se esperaba, el agregar el voto de **ronda 1** como atributo al modelo, incrementa en gran medida el desempeño del mismo.
+
+#### 2
+##### Parámetros de ejecución
+
+    python g03.py --red-neuronal --prefijo red_N --poblacion 1000 --numero-capas 8 --unidades-por-capa 12 --funcion-activacion softmax
+[Enlace al archivo de salida.](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/red_N.csv)
+
+##### Salida de consola
+> ...
+>
+> Prediciendo: r1
+>
+> Precisión de cada subset:
+>
+> Subset 0: 0.6722222222222223
+>
+> Subset 1: 0.0
+>
+> Subset 2: 0.39444444444444443
+>
+> Subset 3: 0.0
+>
+> Subset 4: 0.3333333333333333
+>
+> ...
+>
+> Precisión para el set de pruebas aparte: 0.65
+>
+> Prediciendo: r2
+>
+> Precisión de cada subset:
+>
+> Subset 0: 0.6722222222222223
+>
+> Subset 1: 0.4444444444444444
+>
+> Subset 2: 0.6
+>
+> Subset 3: 0.5833333333333334
+>
+> Subset 4: 0.6444444444444445
+>
+> ...
+>
+> Precisión para el set de pruebas aparte: 0.65
+>
+> Prediciendo: r2_with_r1
+>
+> Precisión de cada subset:
+>
+> Subset 0: 0.6722222222222223
+>
+> Subset 1: 0.5333333333333333
+>
+> Subset 2: 0.6
+>
+> Subset 3: 0.5833333333333334
+>
+> Subset 4: 0.6444444444444445
+>
+> ...
+>
+> Precisión para el set de pruebas aparte: 0.65
+
+[Enlace al archivo con la salida completa.](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/salida.txt)
+
+Tómese en cuenta que con respecto a las primeras pruebas realizadas, se duplicó la cantidad de capas, así como unidades por capa, y al mismo tiempo se cambió la función de activación para las unidades. Estos cambios en los parámetros tuvieron efecto en la optimización de forma muy notoria, según la experiencia, el cambio de función de activación **relu** hacia **softmax** provoca los modelos usualmente alcancen su pico de desempeño de forma abrupta. En ocasiones esto significa también que si el pico del modelo es cercano a cero por ciento de precisión, el modelo se mantiene estancado sin mejorar.
+
+Por otra parte, la influencia de la cantidad de capas y unidades por capa no queda clara hasta el momento. Por lo que se incluye una tercera prueba.
+
+Para consultar las gráficas de cada subset: [Gráficas](https://github.com/bdinarte/PredictorVotaciones/tree/master/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax)
+
+##### Prediciendo Ronda 1
+Subset 3:
+![Subset 3](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/graph1_4.png)
+##### Prediciendo Ronda 2
+Subset 3:
+![Subset 3](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/graph2_4.png)
+##### Prediciendo Ronda 2 con Ronda 1 como atributo
+Subset 3:
+![Subset 3](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/graph3_4.png)
+
+Las gráficas anteriores muestran la mejora en los modelos según lo que se predice.
+
 
 ### Clasificación basada árboles de decisión
 
