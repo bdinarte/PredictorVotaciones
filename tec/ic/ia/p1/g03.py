@@ -63,7 +63,7 @@ def obtener_argumentos():
 
     # Árboles de decisión
     parser.add_argument('--arbol', action='store_true')
-    parser.add_argument('--umbral-poda', nargs=1, type=float, default=[20])
+    parser.add_argument('--umbral-poda', nargs=1, type=float, default=[0.2])
 
     # KNN - K Nearest Neighbors
     parser.add_argument('--knn', action='store_true')
