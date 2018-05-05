@@ -72,8 +72,7 @@ Para que estas diferencias no sesguen la construcción del modelo, se implementa
 	 1.1 Definida por: $$ x' = \frac{x}{max(x)}$$
  2. Se encuentra disponible también la [normalización estándar](https://en.wikipedia.org/wiki/Standard_score). Esta normalización introduce valores negativos `x < 0`, dentro de los datos, además que no define valores entre `0` y `1`.
 	 2.1 Definida por: $$ x' = \frac{x - \mu}{\sigma} $$
- 3. Finalmente la [re-escala de atributos](https://en.wikipedia
- .org/wiki/Feature_scaling#Rescaling). Esta normalización no es recomendada si los valores son muy cercanos, pues acentúa las diferencias entre los mismos.
+ 3. Finalmente la [re-escala de atributos](https://en.wikipedia.org/wiki/Feature_scaling#Rescaling). Esta normalización no es recomendada si los valores son muy cercanos, pues acentúa las diferencias entre los mismos.
 	3.1 Definida por: $$ x' = \frac{x - min(x)}{max(x)-min(x)} $$
 
 #### Configuración del modelo
