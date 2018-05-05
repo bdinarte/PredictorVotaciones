@@ -370,19 +370,19 @@ Para consultar las gráficas de cada subset: [Gráficas](/imgs/--numero-capas%20
 
 ##### Prediciendo Ronda 1
 Subset 0:
-![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph1_0.png)
+![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph1_1.png)
 Subset 2:
-![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph1_2.png)
+![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph1_3.png)
 ##### Prediciendo Ronda 2
 Subset 0:
-![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph2_0.png)
+![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph2_1.png)
 Subset 2:
-![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph1_2.png)
+![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph2_3.png)
 ##### Prediciendo Ronda 2 con Ronda 1 como atributo
 Subset 0:
-![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph3_0.png)
+![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph3_1.png)
 Subset 2:
-![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph1_2.png)
+![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph3_3.png)
 
 Considerando las gráficas anteriores, dado que la función de activación es la misma que en la ejecución 1, se concluye que el aumento considerable de la cantidad de capas, así como la cantidad de unidades por capa, afecta la estabilidad del proceso de convergencia de los modelos, pues no se logra identificar un patrón claro como en otras ocasiones. Esto podría relacionarse con el principio de que los modelos excesivamente complejos tienden a no ser los óptimos.
 
