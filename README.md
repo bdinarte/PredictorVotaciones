@@ -29,7 +29,7 @@ Antes de eso se describen los parámetros que todos tienen en común:
 
 **--poblacion** es el tamaño de la muestra que se va generar para realizar el entrenamiento, la validación y las pruebas.
 
-**k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
+**--k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
 
 
 #### Ejecución del árbol de decisión
@@ -42,11 +42,13 @@ Explicación de los párametros
 
 #### Ejecución de la regresión logística
 
->--regresión-logistica --l1 -prefijo reg --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
->--regresión-logistica --l2 -prefijo reg--poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+>--regresión-logistica --l1 --prefijo reg --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+>--regresión-logistica --l2 --prefijo reg --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
 
-**--l1** nivel de regularización l1
-**--l2** nivel de regularización l2
+**--l1** activa la regularización l1
+**--l2** activa la regularización l2
+**Nota:** el incluir ambos comandos anteriores, activa la regularización por defecto del clasificador lineal utilizado.
+**--normalizacion** normalización para preproceso de los datos, valores posibles [os, ss, fs] (que significan overmax standarization, standard standarization, feature rescaling)
 
 #### Ejecución  KNN-KD-TREE
 
@@ -60,7 +62,8 @@ Explicación de los párametros
 
 **--numero-capas** cantidad de capas de las red 
 **--unidades-por-capa** cantidad de capas de las red 
-**--funcion-activacion** función de activación 
+**--funcion-activacion** función de activación , valores posibles [relu, softmax, softplus]
+**--normalizacion** normalización para preproceso de los datos, valores posibles [os, ss, fs] (que significan overmax standarization, standard standarization, feature rescaling)
 
 ## Reportes de Métodos Implementados
 
