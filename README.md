@@ -26,29 +26,97 @@ El objetivo de este software es entrenar y evaluar distintos modelos de clasific
 
 ### Clasificación basada árboles de decisión
 
-#### Ejemplo de un árbol de decisión
-![Arbol de Decision](/imgs/arbol_decision.jpg "Árbol de Decisión")
-<img src="/imgs/arbol_decision.jpg" alt="Árbol de Decisión" style="width: 100px; height: 100px;"/>
+Antes de abordar el tema del modelo basado en árboles de decisión, es fundamental tener una perspectiva clara de lo que implica dicho modelo.
+Un árbol de decisión toma como entrada un objeto o una situación descrita a través de un conjunto de atributos y devuelve una **decisión**: el valor previsto de la salida dada la entrada. 
+- Los atributos de entrada pueden ser discretos o continuos.
+- El valor de la salida puede ser a su vez discreto o continuo
 
+Además, se debe tener claro que aprender una función de valores discretos se denomina clasificación y aprender una función continua se denomina regresión. En este caso las clasificaciones no son booleanas, ya que dicha clasificación puede tomar una de las 13 etiquetas que representan a los partidos políticos.
+Algunas de las características mencionadas en el libro de IA, A Modern Approach son las que se mencionan a continuación:
+- Un árbol de decisión desarrolla una secuencia de test para poder alcanzar una decisión.
+- Cada nodo interno del árbol corresponde con un test sobre el valor de una de las propiedades, y las ramas que salen del nodo están etiquetadas con los posibles valores de dicha propiedad.
+- Cada nodo hoja del árbol representa el valor que ha de ser devuelto
+si dicho nodo hoja es alcanzado.
+
+---
+#### Algoritmo de aprendizaje
+Ahora dejando de lado la teoría, se procede a enfocar la atención en la sección del algoritmo que se debe emplear, este se muestra en la siguiente imagen, tomada del libro IA, A Modern Approach.
 #### Algoritmo de aprendizaje del árbol de decisión
 ![Algoritmo DTs](/imgs/algoritmo_dts.PNG "Algoritmo de Aprendizaje")
 
-#### Entropía
-<a href="https://www.codecogs.com/eqnedit.php?latex=Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" title="Entropia(s) = \sum_{i=1}^{n}-p_{i}log_{2}p_{i}" /></a>
+---
+#### Fórmulas empleadas
+Otro aspecto importante que se debe conocer, es la generación de cálculos matemáticos que nos ayudarán a calcular la ganancia de información que tiene un determinado atributo, y con ello poder decidir sobre cuál de todos hacer una determinada **bifurcación** en el proceso de entrenamiento del modelo de árbol de decisión.
 
+#### Entropía
+El primer cálculo a tener en cuenta es la entropía, que indica el grado de incertidumbre que posee un cierto atributo. En este caso se implementa para determinar tanto la incertidumbre del set de datos o muestras, y también para el atributo específico sobre el que se quiere bifurcar. A continuación se muestra dicha fórmula:
+
+<a href="https://www.codecogs.com/eqnedit.php?latex=Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" title="Entropia(s) = \sum_{i=1}^{n}-p_{i}log_{2}p_{i}" /></a>
 Donde:
 **S**: es una colección de objetos
 **Pi** : es la probabilidad de los posibles valores
 **i**: las posibles respuestas de los objetos
 
 #### Ganancia de Información
+Por otra parte, se encuentra la formula de ganancia, la cual hace uso del **Resto** y la **Entropía**. Esta consiste básicamente en restar la entropía del set de datos con el resto obtenido del atributo A, obteniendo así el valor de ganancia de dicho atributo. A continuación la fórmula:
+
 <a href="https://www.codecogs.com/eqnedit.php?latex=Ganancia(A)&space;=&space;I(\frac{p}{p&plus;n},&space;\frac{n}{p&plus;n})&space;-&space;Resto(A)" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Ganancia(A)&space;=&space;I(\frac{p}{p&plus;n},&space;\frac{n}{p&plus;n})&space;-&space;Resto(A)" title="Ganancia(A) = I(\frac{p}{p+n}, \frac{n}{p+n}) - Resto(A)" /></a>
 
-
-
-
 #### Resto
+Por último, se encuentra la fórmula Resto, traducida del inglés **Remainder**.
+
 <a href="https://www.codecogs.com/eqnedit.php?latex=Resto(A)&space;=&space;\sum_{i=1}^{v}\frac{p_{i}&plus;n_{i}}{p&plus;n}&space;I(\frac{p_{i}}{p_{i}&plus;n_{i}},&space;\frac{n_{i}}{p_{i}&plus;n_{i}})" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Resto(A)&space;=&space;\sum_{i=1}^{v}\frac{p_{i}&plus;n_{i}}{p&plus;n}&space;I(\frac{p_{i}}{p_{i}&plus;n_{i}},&space;\frac{n_{i}}{p_{i}&plus;n_{i}})" title="Resto(A) = \sum_{i=1}^{v}\frac{p_{i}+n_{i}}{p+n} I(\frac{p_{i}}{p_{i}+n_{i}}, \frac{n_{i}}{p_{i}+n_{i}})" /></a>
+
+---
+#### Pasos llevados a cabo
+Respecto a la clasificación basada en DTs (Decision Trees), la misma se resume en una serie de pasos que se mencionan a continuación:
+- Generar el conjunto de muestras, que en este caso se obtienen del simulador de votantes que se empleó en el proyecto corto 1 (PC1). Esto por medio de los import:
+> from tec.ic.ia.pc1.g03 import generar_muestra_pais
+from tec.ic.ia.pc1.g03 import generar_muestra_provincia
+
+- Luego de ello, por medio de los parámetros recibos, se deben ajustar las muestras de entrenamiento, validación y pruebas. Es decir, crear los subconjuntos a partir de las muestras generadas con el simulador.
+- Por último, solamente quedará por ejecutar todo el proceso de entrenamiento, validación y prueba, para cada predicción a generar. 
+
+**Nota:** Dichas predicciones son las solicitadas en el proyecto, y que deben ser generadas por cada modelo, plasmando el resultado de cada predicción en un archivo final con exensión **.csv**
+Estas predicciones se mencionan a continuación:
+- Predicción de Ronda #1
+- Predicción de Ronda #2
+- Predicción de Ronda #2 con Ronda#1
+- Y por último, una etiqueta la cual no representa una predicción, pero es una clasificación para indicar si la muestra fue tomada para entrenamiento o en el proceso de pruebas.
+
+#### Ejecución del árbol de decisión
+- Primero que todo, al ejecutar el modelo se debe tener claro que es necesario  proporcionar ciertos parámetros para ajustar el comportamiento del modelo a generar. En este caso son necesarios los que acontecen en el ejemplo:
+>--arbol
+--umbral-poda
+22
+--prefijo
+arbolres
+--poblacion
+100
+--porcentaje-pruebas
+10
+--k-segmentos
+10
+
+Explicación de los parámetros:
+- **--arbol** es el flag para indicar que se debe usar el modelo de clasificación con árboles de decisión.
+- **--umbral-poda** ajusta el umbral de poda a utilizar con el árbol de decisión.
+- **--prefijo** es el nombre del archivo resultante que se plasmará en el documento final con las predicciones.
+- **--poblacion** es el tamaño de la muestra que se va generar para realizar el entrenamiento, la validación y las pruebas.
+- **k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
+
+---
+#### Resultados obtenidos
+##### Ejecución de ejemplo #1
+##### Porcentaje por partido para Ronda #1, en ejecución#1
+##### Porcentaje por partido para Ronda #2, en ejecución#1
+##### Porcentaje por partido para Ronda #2 con Ronda#1, en ejecución#1
+
+
+##### Ejecución de ejemplo #2
+##### Porcentaje por partido para Ronda #1, en ejecución#2
+##### Porcentaje por partido para Ronda #2, en ejecución#2
+##### Porcentaje por partido para Ronda #2 con Ronda#1, en ejecución#2
 
 
 
