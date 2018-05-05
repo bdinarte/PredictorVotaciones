@@ -1,0 +1,64 @@
+Duración de generar_muestra_pais: 1.1610808372497559
+
+Prediciendo: r1
+Subset 0 completo.
+Subset 1 completo.
+Subset 2 completo.
+Subset 3 completo.
+Subset 4 completo.
+Precisión de cada subset:
+Subset 0: 0.6722222222222223
+Subset 1: 0.0
+Subset 2: 0.39444444444444443
+Subset 3: 0.0
+Subset 4: 0.3333333333333333
+Pérdida de cada subset:
+Subset 0: 2.7
+Subset 1: 2.703
+Subset 2: 2.705
+Subset 3: 2.704
+Subset 4: 2.7
+
+Precisión para el set de pruebas aparte: 0.65
+
+Prediciendo: r2
+Subset 0 completo.
+Subset 1 completo.
+Subset 2 completo.
+Subset 3 completo.
+Subset 4 completo.
+Precisión de cada subset:
+Subset 0: 0.6722222222222223
+Subset 1: 0.4444444444444444
+Subset 2: 0.6
+Subset 3: 0.5833333333333334
+Subset 4: 0.6444444444444445
+Pérdida de cada subset:
+Subset 0: 1.35
+Subset 1: 1.383
+Subset 2: 1.369
+Subset 3: 1.361
+Subset 4: 1.346
+
+Precisión para el set de pruebas aparte: 0.65
+
+Prediciendo: r2_with_r1
+Subset 0 completo.
+Subset 1 completo.
+Subset 2 completo.
+Subset 3 completo.
+Subset 4 completo.
+Precisión de cada subset:
+Subset 0: 0.6722222222222223
+Subset 1: 0.5333333333333333
+Subset 2: 0.6
+Subset 3: 0.5833333333333334
+Subset 4: 0.6444444444444445
+Pérdida de cada subset:
+Subset 0: 1.097
+Subset 1: 1.093
+Subset 2: 1.099
+Subset 3: 1.077
+Subset 4: 1.122
+
+Precisión para el set de pruebas aparte: 0.65
