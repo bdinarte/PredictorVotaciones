@@ -289,11 +289,26 @@ De lo anterior se puede apreciar, que como se esperaba, el agregar el voto de **
 >
 > Precisión para el set de pruebas aparte: 0.65
 
+[Enlace al archivo con la salida completa.](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/salida.txt)
+
 Tómese en cuenta que con respecto a las primeras pruebas realizadas, se duplicó la cantidad de capas, así como unidades por capa, y al mismo tiempo se cambió la función de activación para las unidades. Estos cambios en los parámetros tuvieron efecto en la optimización de forma muy notoria, según la experiencia, el cambio de función de activación **relu** hacia **softmax** provoca los modelos usualmente alcancen su pico de desempeño de forma abrupta. En ocasiones esto significa también que si el pico del modelo es cercano a cero por ciento de precisión, el modelo se mantiene estancado sin mejorar.
 
 Por otra parte, la influencia de la cantidad de capas y unidades por capa no queda clara hasta el momento. Por lo que se incluye una tercera prueba.
 
-Para consultar las gráficas de cada subset:
+Para consultar las gráficas de cada subset: [Gráficas](https://github.com/bdinarte/PredictorVotaciones/tree/master/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax)
+
+##### Prediciendo Ronda 1
+Subset 3:
+![Subset 3](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/graph1_4.png)
+##### Prediciendo Ronda 2
+Subset 3:
+![Subset 3](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/graph2_4.png)
+##### Prediciendo Ronda 2 con Ronda 1 como atributo
+Subset 3:
+![Subset 3](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/graph3_4.png)
+
+Las gráficas anteriores muestran la mejora en los modelos según lo que se predice.
+
 
 ### Clasificación basada árboles de decisión
 
