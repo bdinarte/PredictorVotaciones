@@ -23,11 +23,11 @@ El objetivo de este software es entrenar y evaluar distintos modelos de clasific
 - Primero que todo, al ejecutar el modelo se debe tener claro que es necesario  proporcionar ciertos parámetros para ajustar el comportamiento del modelo a generar. En este caso son necesarios los que acontecen en el ejemplo:
 >--arbol
 --umbral-poda
-22
+0.1
 --prefijo
 arbolres
 --poblacion
-100
+1000
 --porcentaje-pruebas
 10
 --k-segmentos
