@@ -166,10 +166,15 @@ Dado que cada ejecución del programa genera una simulación de muestra de datos
 > Prediciendo: r1
 ..
 > Prediciendo: r2
+
 > Precisión de cada subset:
+
 > Subset 0: 0.5833333333333334
+
 > Subset 1: 0.6555555555555556
+
 > Subset 2: 0.5833333333333334
+
 > Subset 3: 0.6
 > Subset 4: 0.5611111111111111
 > Pérdida de cada subset:
@@ -193,11 +198,11 @@ Dado que cada ejecución del programa genera una simulación de muestra de datos
 
 Algunas gráficas que muestran la optimización de la red durante el entrenamiento.
 ##### Prediciendo Ronda 2
-[Subset 0](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph2_1.png)
-[Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph2_4.png)
+![Subset 0](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph2_1.png)
+![Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph2_4.png)
 ##### Prediciendo Ronda 2 con Ronda 1 como atributo
-[Subset 0](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_1.png)
-[Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_4.png)
+![Subset 0](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_1.png)
+![Subset 3](/imgs/--numero-capas%204%20--unidades-por-capa%206%20--funcion-activacion%20relu/graph3_4.png)
 
 
 
