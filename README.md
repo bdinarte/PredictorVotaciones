@@ -361,7 +361,7 @@ Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cr
 
 #### Teoría 
 
-La definición de la función $$NN(k, x_i)$$ es sencilla; dado un conjunto de $$N$$ muestras y una consulta $$x_q$$,  se debe retornar la muestra $n_i$ que resulte en la menor distancia  con $x_q$. Esto tiene un costo computacional de $O(N)$ por lo que no resulta eficiente ante grandes cantidades de datos . 
+La definición de la función $NN(k, x_i)$ es sencilla; dado un conjunto de $N$ muestras y una consulta $x_q$,  se debe retornar la muestra $n_i$ que resulte en la menor distancia  con $x_q$. Esto tiene un costo computacional de $O(N)$ por lo que no resulta eficiente ante grandes cantidades de datos . 
 
 Una solución a esto es disminuir el tiempo de consulta por medio de la estructura `k-d tree` . Con esta estructura se puede reducir el espacio de búsqueda a la mitad cada vez que se realiza una iteración. En cada una de estas iteraciones se selecciona un atributo mediante algún criterio, como la varianza, o por medio de alguna secuencia definida. 
 
@@ -369,13 +369,13 @@ En el siguiente ejemplo se puede apreciar el procedimiento utilizado para contru
 
 ![Kd-Tree](/imgs/kd_tree_estructura.png "Kd-Tree")
 
-Primeramente, se dividen las muestras utilizando el atributo $x$ ![#f03c15](https://placehold.it/15/f03c15/000000?text=+), posteriormente se utiliza el atributo $y$ para los dos subconjuntos resultantes (![#FFBF00](https://placehold.it/15/FFBF00/000000?text=+), ![#2E64FE](https://placehold.it/15/#2E64FE/000000?text=+)) recursivamente se aplica el procedimiento hasta que solamente se conserve un par $(x, y)$ en los nodos resultantes ![#f1f1f1](https://placehold.it/15/f1f1f1/000000?text=+). 
+Primeramente, se dividen las muestras utilizando el atributo $x$ ![#f03c15](https://placehold.it/15/f03c15/000000?text=+), posteriormente se utiliza el atributo $y$ para los dos subconjuntos resultantes (![#FFBF00](https://placehold.it/15/FFBF00/000000?text=+), ![#2E64FE](https://placehold.it/15/#2E64FE/000000?text=+)) recursivamente se aplica el procedimiento hasta que solamente se conserve un par $(x, y)$ en los últimos nodos ![#f1f1f1](https://placehold.it/15/f1f1f1/000000?text=+). 
 
 #### Implementación
 
 El `k-d tree` ha sido implementado mediante diccionarios de `Python`.  Esto debido a que era conveniente para depurar, puesto que era fácilmente visualizable mediante la función `pprint`. 
 
-Debido a la necesidad calcular la distancia entre dos vectores, era indispensable que los valores de todas las columnas fueran númericos, por lo que se realiza una etapa de pre-procesamiento que consisten en dos parte. 
+Debido a la necesidad calcular la distancia entre dos vectores, era indispensable que los valores de todas las columnas fueran númericos, por lo que se realiza una etapa de pre-procesamiento que consiste en dos partes. 
 
 La primera se encarga de convertir los atributos categóricos en un representacion númerica. Para ello se usa el algoritmo `One Hot Encoding`, el cual crea una columna adicional con valores binarios por cada categoría posible que pueda tener un atributo en particular. Este fue implementado mediante la función `get_dummies` de la librería `pandas`. Un ejemplo de como funciona el algoritmo se ve reflejado en las siguientes tablas: 
 
@@ -393,9 +393,11 @@ De la tabla anterior, la primera columna debe se convertida a una representació
 | 0             | 1               | 30   | 0    |
 | 0             | 1               | 40   | 0    |
 
-La segunda etapa...
+La segunda etapa consiste en normalizar la matriz, para ello se utiliza la función `MinMaxScaler` de la librería `sklearn`. Esta normalización permite que todos los atributos puedan competir entre sí usando la misma escala. 
 
-El modo de seleccionar el atributo encargado de bifurcar el ábol es elegido calculando la varianza de cada columna de la matriz de muestras.  
+Una vez que se ha realizado el pre-procesamiento la matriz, se puede realizar el entrenamiento del modelo. El procedimiento es el mismo que el descrito anteriormente, sin embargo, la elección del atributo que se usa para realizar las bifurcaciones no está dado al azar, este es elegido calculando la varianza de cada columna de la matriz de muestras.  El que obtiene una mayor varianza refleja que es capaz de dividir los datos de una manera más consistente, por lo que es utilizado. Además, se restringe que el atributo que ha sido utilizado en un nodo pueda ser utilizado en sus nodos hijos. Esto porque podría causar que en todas las bifurcaciones se seleccione repetidas veces el mismo atributo. 
+
+Adicionalmente, se define un máximo en cuanto a la profundidad que puede tener el `k-d tree`. Como es de evidente, al definir una profundidad el tamaño de las hohEsto se hace para poder disminuir la duración de la creacion
 
 #### Resultados obtenidos  
 
