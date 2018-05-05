@@ -19,6 +19,27 @@ El objetivo de este software es entrenar y evaluar distintos modelos de clasific
 
 ## Manual de Uso
 
+#### Ejecución del árbol de decisión
+- Primero que todo, al ejecutar el modelo se debe tener claro que es necesario  proporcionar ciertos parámetros para ajustar el comportamiento del modelo a generar. En este caso son necesarios los que acontecen en el ejemplo:
+>--arbol
+--umbral-poda
+22
+--prefijo
+arbolres
+--poblacion
+100
+--porcentaje-pruebas
+10
+--k-segmentos
+10
+
+Explicación de los parámetros:
+- **--arbol** es el flag para indicar que se debe usar el modelo de clasificación con árboles de decisión.
+- **--umbral-poda** ajusta el umbral de poda a utilizar con el árbol de decisión.
+- **--prefijo** es el nombre del archivo resultante que se plasmará en el documento final con las predicciones.
+- **--poblacion** es el tamaño de la muestra que se va generar para realizar el entrenamiento, la validación y las pruebas.
+- **k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
+
 ## Reportes de Métodos Implementados
 ###Clasificación basada en modelos lineales
 
@@ -52,6 +73,7 @@ Otro aspecto importante que se debe conocer, es la generación de cálculos mate
 El primer cálculo a tener en cuenta es la entropía, que indica el grado de incertidumbre que posee un cierto atributo. En este caso se implementa para determinar tanto la incertidumbre del set de datos o muestras, y también para el atributo específico sobre el que se quiere bifurcar. A continuación se muestra dicha fórmula:
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" title="Entropia(s) = \sum_{i=1}^{n}-p_{i}log_{2}p_{i}" /></a>
+
 Donde:
 **S**: es una colección de objetos
 **Pi** : es la probabilidad de los posibles valores
@@ -72,7 +94,7 @@ Por último, se encuentra la fórmula Resto, traducida del inglés **Remainder**
 Respecto a la clasificación basada en DTs (Decision Trees), la misma se resume en una serie de pasos que se mencionan a continuación:
 - Generar el conjunto de muestras, que en este caso se obtienen del simulador de votantes que se empleó en el proyecto corto 1 (PC1). Esto por medio de los import:
 > from tec.ic.ia.pc1.g03 import generar_muestra_pais
-from tec.ic.ia.pc1.g03 import generar_muestra_provincia
+> from tec.ic.ia.pc1.g03 import generar_muestra_provincia
 
 - Luego de ello, por medio de los parámetros recibos, se deben ajustar las muestras de entrenamiento, validación y pruebas. Es decir, crear los subconjuntos a partir de las muestras generadas con el simulador.
 - Por último, solamente quedará por ejecutar todo el proceso de entrenamiento, validación y prueba, para cada predicción a generar. 
@@ -83,27 +105,6 @@ Estas predicciones se mencionan a continuación:
 - Predicción de Ronda #2
 - Predicción de Ronda #2 con Ronda#1
 - Y por último, una etiqueta la cual no representa una predicción, pero es una clasificación para indicar si la muestra fue tomada para entrenamiento o en el proceso de pruebas.
-
-#### Ejecución del árbol de decisión
-- Primero que todo, al ejecutar el modelo se debe tener claro que es necesario  proporcionar ciertos parámetros para ajustar el comportamiento del modelo a generar. En este caso son necesarios los que acontecen en el ejemplo:
->--arbol
---umbral-poda
-22
---prefijo
-arbolres
---poblacion
-100
---porcentaje-pruebas
-10
---k-segmentos
-10
-
-Explicación de los parámetros:
-- **--arbol** es el flag para indicar que se debe usar el modelo de clasificación con árboles de decisión.
-- **--umbral-poda** ajusta el umbral de poda a utilizar con el árbol de decisión.
-- **--prefijo** es el nombre del archivo resultante que se plasmará en el documento final con las predicciones.
-- **--poblacion** es el tamaño de la muestra que se va generar para realizar el entrenamiento, la validación y las pruebas.
-- **k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
 
 ---
 #### Resultados obtenidos
