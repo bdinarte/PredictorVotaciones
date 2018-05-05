@@ -114,7 +114,7 @@ Conjunto de parámetros utilizados en la ejecución:
 
 **Nota:** Se debe tener claro que se utilizará el árbol con mejor precisión según el resultado arrojado por medio del proceso de cross-validation que se lleva a cabo en el entrenamiento.
 
-Precisiones obtenidas en la Ronda#1
+**Precisiones obtenidas en la Ronda#1**
 - **Mejor Precisión:** 21.11%
 - **Peor Precisión:** 12.22%
 - Gráfico de comportamiento:
@@ -123,7 +123,7 @@ Precisiones obtenidas en la Ronda#1
 
 
 
-Precisiones obtenidas en la Ronda#2
+**Precisiones obtenidas en la Ronda#2**
 - **Mejor Precisión:** 54.44%
 - **Peor Precisión:** 32.22%
 - Gráfico de comportamiento:
@@ -132,7 +132,7 @@ Precisiones obtenidas en la Ronda#2
 
 
 
-Precisiones obtenidas en la Ronda#2 con Ronda#1
+**Precisiones obtenidas en la Ronda#2 con Ronda#1**
 - **Mejor Precisión:** 60.33%
 - **Peor Precisión:** 39.54%
 - Gráfico de comportamiento:
@@ -154,7 +154,7 @@ Conjunto de parámetros utilizados en la ejecución:
 
 **Nota:** Se debe tener claro que se utilizará el árbol con mejor precisión según el resultado arrojado por medio del proceso de cross-validation que se lleva a cabo en el entrenamiento.
 
-Precisiones obtenidas en la Ronda#1
+**Precisiones obtenidas en la Ronda#1**
 - **Mejor Precisión:** 13,12%
 - **Peor Precisión:** 9,37%
 - Gráfico de comportamiento:
@@ -163,7 +163,7 @@ Precisiones obtenidas en la Ronda#1
 
 
 
-Precisiones obtenidas en la Ronda#2
+**Precisiones obtenidas en la Ronda#2**
 - **Mejor Precisión:** 44,37%
 - **Peor Precisión:** 20%
 - Gráfico de comportamiento:
@@ -172,7 +172,7 @@ Precisiones obtenidas en la Ronda#2
 
 
 
-Precisiones obtenidas en la Ronda#2 con Ronda#1
+**Precisiones obtenidas en la Ronda#2 con Ronda#1**
 - **Mejor Precisión:** 42,5%
 - **Peor Precisión:** 19,37%
 - Gráfico de comportamiento:
