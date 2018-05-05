@@ -109,15 +109,71 @@ Estas predicciones se mencionan a continuación:
 ---
 #### Resultados obtenidos
 ##### Ejecución de ejemplo #1
+Conjunto de parámetros utilizados en la ejecución:
+> --arbol --umbral-poda 0.1 --prefijo arbol_ex1 --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+
+**Nota:** Se debe tener claro que se utilizará el árbol con mejor precisión según el resultado arrojado por medio del proceso de cross-validation que se lleva a cabo en el entrenamiento.
+
+Precisiones obtenidas en la Ronda#1
+- **Mejor Precisión:** 21.11%
+- **Peor Precisión:** 12.22%
+- Gráfico de comportamiento:
+![pr1e1](/imgs/ex1_precisiones1.PNG "Preciones Ronda 1 - Ejemplo1")
+
+
+Precisiones obtenidas en la Ronda#2
+- **Mejor Precisión:** 54.44%
+- **Peor Precisión:** 32.22%
+- Gráfico de comportamiento:
+![pr2e1](/imgs/ex1_precisiones2.PNG "Preciones Ronda 2 - Ejemplo1")
+
+
+Precisiones obtenidas en la Ronda#2 con Ronda#1
+- **Mejor Precisión:** 60.33%
+- **Peor Precisión:** 39.54%
+- Gráfico de comportamiento:
+![pr21e1](/imgs/ex1_precisiones21.PNG "Preciones Ronda2 con Ronda1 - Ejemplo1")
+
+
 ##### Porcentaje por partido para Ronda #1, en ejecución#1
+
 ##### Porcentaje por partido para Ronda #2, en ejecución#1
+
 ##### Porcentaje por partido para Ronda #2 con Ronda#1, en ejecución#1
 
-
+---
 ##### Ejecución de ejemplo #2
+Conjunto de parámetros utilizados en la ejecución:
+> --arbol --umbral-poda 0.2 --prefijo arbol_ex2 --poblacion 2000 --porcentaje-pruebas 20 --k-segmentos 10
+
+**Nota:** Se debe tener claro que se utilizará el árbol con mejor precisión según el resultado arrojado por medio del proceso de cross-validation que se lleva a cabo en el entrenamiento.
+
+Precisiones obtenidas en la Ronda#1
+- **Mejor Precisión:** 13,12%
+- **Peor Precisión:** 9,37%
+- Gráfico de comportamiento:
+![pr1e2](/imgs/ex2_precisiones1.PNG "Preciones Ronda 1 - Ejemplo2")
+
+
+Precisiones obtenidas en la Ronda#2
+- **Mejor Precisión:** 44,37%
+- **Peor Precisión:** 20%
+- Gráfico de comportamiento:
+![pr2e2](/imgs/ex2_precisiones2.PNG "Preciones Ronda 2 - Ejemplo2")
+
+
+Precisiones obtenidas en la Ronda#2 con Ronda#1
+- **Mejor Precisión:** 42,5%
+- **Peor Precisión:** 19,37%
+- Gráfico de comportamiento:
+![pr21e2](/imgs/ex2_precisiones21.PNG "Preciones Ronda2 con Ronda1 - Ejemplo2")
+
 ##### Porcentaje por partido para Ronda #1, en ejecución#2
+
 ##### Porcentaje por partido para Ronda #2, en ejecución#2
+
 ##### Porcentaje por partido para Ronda #2 con Ronda#1, en ejecución#2
+
 
 
 
