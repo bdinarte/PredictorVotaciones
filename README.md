@@ -41,7 +41,7 @@ Explicación de los parámetros:
 - **k-segmentos** indica los k segmentos en que se dividirá el set de entrenamiento, para realizar el proceso de cross-validation.
 
 ## Reportes de Métodos Implementados
-###Clasificación basada en modelos lineales
+### Clasificación basada en modelos lineales
 
 ### Clasificación basada en redes neuronales
 
@@ -75,9 +75,9 @@ El primer cálculo a tener en cuenta es la entropía, que indica el grado de inc
 <a href="https://www.codecogs.com/eqnedit.php?latex=Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Entropia(s)&space;=&space;\sum_{i=1}^{n}-p_{i}log_{2}p_{i}" title="Entropia(s) = \sum_{i=1}^{n}-p_{i}log_{2}p_{i}" /></a>
 
 Donde:
-**S**: es una colección de objetos
-**Pi** : es la probabilidad de los posibles valores
-**i**: las posibles respuestas de los objetos
+- **S**: es una colección de objetos
+- **Pi** : es la probabilidad de los posibles valores
+- **i**: las posibles respuestas de los objetos
 
 #### Ganancia de Información
 Por otra parte, se encuentra la formula de ganancia, la cual hace uso del **Resto** y la **Entropía**. Esta consiste básicamente en restar la entropía del set de datos con el resto obtenido del atributo A, obteniendo así el valor de ganancia de dicho atributo. A continuación la fórmula:
