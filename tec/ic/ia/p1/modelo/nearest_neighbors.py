@@ -730,6 +730,7 @@ def analisis_knn(args, datos):
 
     mejores_precisiones = list()
     precisiones_promedio = list()
+    precisiones_pruebas = list()
 
     indices = list(range(datos.shape[0]))
     ind_pruebas, ind_entrenamiento = separar(indices, porcentaje_pruebas)
@@ -751,6 +752,8 @@ def analisis_knn(args, datos):
         datos_ronda, etiqs_ronda = preprocesar_ronda(datos, ronda=n_ronda)
 
         datos_pruebas = datos_ronda[ind_pruebas]
+        etiqs_pruebas = etiqs_ronda[ind_pruebas]
+
         datos_entrenamiento = datos_ronda[ind_entrenamiento]
         etiqs_entrenamiento = etiqs_ronda[ind_entrenamiento]
 
@@ -765,12 +768,15 @@ def analisis_knn(args, datos):
         predics_pruebas = predecir_conjunto(clasificador,
                                             datos_pruebas, k_vecinos)
 
+        precision_pruebas = accuracy_score(etiqs_pruebas, predics_pruebas)
+
         predicciones = predics_pruebas + predicciones
 
         salida[:, 23 + n_ronda] = predicciones
 
         mejores_precisiones.append(mejor_precision)
         precisiones_promedio.append(precision_promedio)
+        precisiones_pruebas.append(precision_pruebas)
 
     salida = pd.DataFrame(salida, columns=columnas_salida)
 
@@ -784,6 +790,11 @@ def analisis_knn(args, datos):
     print("Mejor precisión R1: " + str(mejores_precisiones[0]))
     print("Mejor precisión R2 sin R1: " + str(mejores_precisiones[1]))
     print("Mejor precisión R2 con R1: " + str(mejores_precisiones[2]))
+
+    print()
+    print("Precisión en pruebas R1: " + str(precisiones_pruebas[0]))
+    print("Precisión en pruebas R2 sin R1: " + str(precisiones_pruebas[1]))
+    print("Precisión en pruebas R2 con R1: " + str(precisiones_pruebas[2]))
 
     # Se guarda el archivo con las 4 columnas de la especificación
     nombre_salida = os.path.join("archivos", prefijo_archivos + "_knn.csv")
