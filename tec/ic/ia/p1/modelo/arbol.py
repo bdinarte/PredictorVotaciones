@@ -363,8 +363,7 @@ def podar_arbol(nodo_raiz, nodo, set_datos, mejor_puntaje):
     :param nodo_raiz: nodo raiz del arbol
     :param nodo: es el mismo nodo raiz del arbol
     :param set_datos: es el conjunto de datos con que se entreno el modelo
-    :param mejor_puntaje: es el valor actual de precision que tiene el modelo,
-    y sobre el cual se intentara mejorar
+    :param mejor_puntaje: es el umbral de poda
     :return: nuevo puntaje de precision que obtiene el arbol
     """
 
@@ -383,31 +382,31 @@ def podar_arbol(nodo_raiz, nodo, set_datos, mejor_puntaje):
 
         # si el nuevo puntaje es mejor, cambiarlos
         if nuevo_puntaje >= mejor_puntaje:
-            return nuevo_puntaje
+            return nuevo_puntaje, nodo
         else:
             nodo.nodo_padre.es_hoja = False
             nodo.nodo_padre.clasificacion = None
-            return mejor_puntaje
+            return mejor_puntaje, nodo
 
     # si no es una hoja
     else:
         # podar el arbol con el hijo derecho
-        nuevo_puntaje = \
+        nuevo_puntaje, nodo = \
             podar_arbol(nodo_raiz, nodo.hijo_der, set_datos, mejor_puntaje)
 
         # si es una hoja, devolverlo
         if nodo.es_hoja:
-            return nuevo_puntaje
+            return nuevo_puntaje, nodo
 
         # podar el arbol con el hijo izquierdo
-        nuevo_puntaje = \
+        nuevo_puntaje, nodo = \
             podar_arbol(nodo_raiz, nodo.hijo_izq, set_datos, nuevo_puntaje)
 
         # si es una hoja, devolverlo
         if nodo.es_hoja:
-            return nuevo_puntaje
+            return nuevo_puntaje, nodo
 
-        return nuevo_puntaje
+        return nuevo_puntaje, nodo
 
 
 # -----------------------------------------------------------------------------
@@ -542,7 +541,8 @@ def preprocesar_ronda(datos, ronda):
 
 # -----------------------------------------------------------------------------
 
-def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
+def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10,
+                     umbral_poda=0.1):
     """
     Los datos se dividen en `k_segmentos`. Se itera k veces el entrenamiento.
     Se elige 1/K para validación en cada iteración. En cada iteración se
@@ -553,6 +553,7 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
     atributos
     :param k_segmentos: Cantidad de segmentos en los que se deben dividir
     los datos. Representa también la cantidad de iteraciones.
+    :param umbral_poda: valor minimo de ganancia para podar una rama
     :return: (arbol, precision_promedio, mejor_precision, predicciones)
         ♣ El árbol que se retorna es el que obtuvo mejor presición
     """
@@ -608,17 +609,20 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10):
                 validateset.indice_clasificador = \
                     range(len(validateset.atributos))[-1]
 
-        precision, etiqs_predics = validar_arbol(nodo_raiz, validateset)
+        precision_poda, raiz_podada = \
+            podar_arbol(nodo_raiz, nodo_raiz, set_datos, umbral_poda)
 
-        print('\t -> Precision obtenida ', precision)
+        precision, etiqs_predics = validar_arbol(raiz_podada, validateset)
+
+        print('\t -> Precision obtenida', precision_poda)
         print('\t -> Mejor precision actual ', mejor_precision)
 
-        if mejor_precision < precision:
+        if mejor_precision < precision_poda:
             print('\t****** Se encontró una mejor precisión ******')
             print('\tSe actualiza el árbol y la precisión')
 
-            mejor_precision = precision
-            mejor_arbol = nodo_raiz
+            mejor_precision = precision_poda
+            mejor_arbol = raiz_podada
 
         predicciones += etiqs_predics
 
@@ -646,8 +650,9 @@ def analisis_arbol_decision(args, muestras):
     """
 
     print('\nGenerando Analisis del Arbol de Decision')
-    # umbral_poda = args.umbral_poda
+    umbral_poda = args.umbral_poda[0]
     porcentaje_pruebas = args.porcentaje_pruebas[0]
+    k_segmentos = args.k_segmentos[0]
     prefijo_archivos = "arbol" if args.prefijo is None else args.prefijo[0]
 
     # Para agregar las 4 columnas solicitadas
@@ -679,7 +684,8 @@ def analisis_arbol_decision(args, muestras):
 
         print('Entrenando el modelo')
         arbol, precision, predic_generadas = \
-            cross_validation(muestras_entrenamiento, atributos, k_segmentos=10)
+            cross_validation(muestras_entrenamiento, atributos,
+                             k_segmentos, umbral_poda)
 
         predicciones += predic_generadas
 
