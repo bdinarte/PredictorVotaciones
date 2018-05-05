@@ -110,7 +110,7 @@ Estas predicciones se mencionan a continuación:
 #### Resultados obtenidos
 ##### Ejecución de ejemplo #1
 Conjunto de parámetros utilizados en la ejecución:
-> --arbol --umbral-poda 0.1 --prefijo arbol_ex1 --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
+> --arbol --umbral-poda 0.2 --prefijo arbol_ex1 --poblacion 1000 --porcentaje-pruebas 10 --k-segmentos 10
 
 **Nota:** Se debe tener claro que se utilizará el árbol con mejor precisión según el resultado arrojado por medio del proceso de cross-validation que se lleva a cabo en el entrenamiento.
 
@@ -147,7 +147,7 @@ Lo que indica es el valor de precisión que se obtuvo por cada grupo K, en el cr
 ---
 ##### Ejecución de ejemplo #2
 Conjunto de parámetros utilizados en la ejecución:
-> --arbol --umbral-poda 0.2 --prefijo arbol_ex2 --poblacion 2000 --porcentaje-pruebas 20 --k-segmentos 10
+> --arbol --umbral-poda 0.1 --prefijo arbol_ex2 --poblacion 2000 --porcentaje-pruebas 20 --k-segmentos 10
 
 **Nota:** Se debe tener claro que se utilizará el árbol con mejor precisión según el resultado arrojado por medio del proceso de cross-validation que se lleva a cabo en el entrenamiento.
 
