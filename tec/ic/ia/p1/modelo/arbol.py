@@ -221,9 +221,9 @@ def clasificar_hoja(set_datos, clasificador):
     total = len(set_datos.muestras)
     diferencia = total - cant_valores_distintos
     if cant_valores_distintos >= diferencia:
-        return 1
+        return 'ACCION CIUDADANA'
     else:
-        return 0
+        return 'RESTAURACION NACIONAL'
 
 
 # -----------------------------------------------------------------------------
@@ -614,15 +614,15 @@ def cross_validation(muestras_entrenamiento, atributos, k_segmentos=10,
 
         precision, etiqs_predics = validar_arbol(raiz_podada, validateset)
 
-        print('\t -> Precision obtenida', precision_poda)
+        print('\t -> Precision obtenida', precision)
         print('\t -> Mejor precision actual ', mejor_precision)
 
-        if mejor_precision < precision_poda:
+        if mejor_precision < precision:
             print('\t****** Se encontró una mejor precisión ******')
             print('\tSe actualiza el árbol y la precisión')
 
-            mejor_precision = precision_poda
-            mejor_arbol = raiz_podada
+            mejor_precision = precision
+            mejor_arbol = nodo_raiz
 
         predicciones += etiqs_predics
 
