@@ -114,8 +114,6 @@ La precisión tomada en cuenta es la obtenida de la predicción del conjunto de 
 
 Luego del proceso de [K-Fold Cross Validation](https://en.wikipedia.org/wiki/Cross-validation_%28statistics%29#k-fold_cross-validation), se utiliza la precisión de cada modelo en su validación para determinar cual es el más óptimo, para así generar la predicción de todo el conjunto de datos para generar el archivo de salida solicitado en la especificación del proyecto.
 
-#### Resultados
-
 ### Clasificación basada en redes neuronales
 
 Las redes neuronales tienen gran cantidad de usos, como el reconocimiento de patrones, clasificación de elementos, aproximación de funciones, entre otros más.
@@ -318,7 +316,7 @@ Tómese en cuenta que con respecto a las primeras pruebas realizadas, se duplic�
 
 Por otra parte, la influencia de la cantidad de capas y unidades por capa no queda clara hasta el momento. Por lo que se incluye una tercera prueba.
 
-Para consultar las gráficas de cada subset: [Gráficas](https://github.com/bdinarte/PredictorVotaciones/tree/master/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax)
+Para consultar las gráficas de cada subset: [Gráficas](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax)
 
 ##### Prediciendo Ronda 1
 Subset 3:
@@ -330,7 +328,86 @@ Subset 3:
 Subset 3:
 ![Subset 3](/imgs/--numero-capas%208%20--unidades-por-capa%2012%20--funcion-activacion%20softmax/graph3_4.png)
 
-Las gráficas anteriores muestran la mejora en los modelos según lo que se predice.
+Las gráficas anteriores muestran la mejora en la minimización de la cantidad de epochs necesarios para que el modelo converja. Esto probablemente está relacionado a los atributos utilizados por cada modelo, así como a la progresiva disminución de etiquetas disponibles.
+
+#### 3
+Esta tercera ejecución tiene como objetivo poderse comparar con la ejecución 1. Esto pues comparten la misma función de activación **relu**, pero la cantidad de capas y de unidades por capa se aumentó en 10 con respecto a dicha prueba 1.
+##### Parámetros de ejecución
+    python g03.py --red-neuronal --prefijo red_N --poblacion 1000 --numero-capas 14 --unidades-por-capa 16 --funcion-activacion relu
+
+[Enlace al archivo de salida.](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/red_N.csv)
+
+##### Salida de consola
+>
+>Prediciendo: r1
+>
+>Precisión de cada subset:
+>
+>Subset 0: 0.43
+>
+>Subset 1: 0.5966666666666667
+>
+>Subset 2: 0.56
+>
+>...
+>
+>Precisión para el set de pruebas aparte: 0.54
+>
+>...
+>
+>Prediciendo: r2
+>
+>Precisión de cada subset:
+>
+>Subset 0: 0.5766666666666667
+>
+>Subset 1: 0.5966666666666667
+>
+>Subset 2: 0.55
+>
+>...
+>
+>Precisión para el set de pruebas aparte: 0.54
+>
+>...
+>
+>Prediciendo: r2_with_r1
+>
+>...
+>
+>Precisión de cada subset:
+>
+>Subset 0: 0.5766666666666667
+>
+>Subset 1: 0.9833333333333333
+>
+>Subset 2: 0.56
+>
+>...
+
+[Enlace al archivo con la salida completa.](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/salida.txt)
+
+Con base en las salidas de consola, parece ser que no existe mucha diferencia al cambiar tan drásticamente la estructura de los modelos. Pero al observar las gráficas se nota una evidente distorsión en la convergencia y estabilidad de cada modelo.
+
+Para consultar las gráficas de cada subset: [Gráficas](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu)
+
+##### Prediciendo Ronda 1
+Subset 0:
+![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph1_1.png)
+Subset 2:
+![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph1_3.png)
+##### Prediciendo Ronda 2
+Subset 0:
+![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph2_1.png)
+Subset 2:
+![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph2_3.png)
+##### Prediciendo Ronda 2 con Ronda 1 como atributo
+Subset 0:
+![Subset 0](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph3_1.png)
+Subset 2:
+![Subset 2](/imgs/--numero-capas%2014%20--unidades-por-capa%2016%20--funcion-activacion%20relu/graph3_3.png)
+
+Considerando las gráficas anteriores, dado que la función de activación es la misma que en la ejecución 1, se concluye que el aumento considerable de la cantidad de capas, así como la cantidad de unidades por capa, afecta la estabilidad del proceso de convergencia de los modelos, pues no se logra identificar un patrón claro como en otras ocasiones. Esto podría relacionarse con el principio de que los modelos excesivamente complejos tienden a no ser los óptimos.
 
 
 ### Clasificación basada árboles de decisión
