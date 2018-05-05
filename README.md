@@ -118,6 +118,7 @@ Precisiones obtenidas en la Ronda#1
 - **Mejor Precisión:** 21.11%
 - **Peor Precisión:** 12.22%
 - Gráfico de comportamiento:
+
 ![pr1e1](/imgs/ex1_precisiones1.PNG "Preciones Ronda 1 - Ejemplo1")
 
 
@@ -125,6 +126,7 @@ Precisiones obtenidas en la Ronda#2
 - **Mejor Precisión:** 54.44%
 - **Peor Precisión:** 32.22%
 - Gráfico de comportamiento:
+
 ![pr2e1](/imgs/ex1_precisiones2.PNG "Preciones Ronda 2 - Ejemplo1")
 
 
@@ -132,6 +134,7 @@ Precisiones obtenidas en la Ronda#2 con Ronda#1
 - **Mejor Precisión:** 60.33%
 - **Peor Precisión:** 39.54%
 - Gráfico de comportamiento:
+
 ![pr21e1](/imgs/ex1_precisiones21.PNG "Preciones Ronda2 con Ronda1 - Ejemplo1")
 
 
@@ -152,6 +155,7 @@ Precisiones obtenidas en la Ronda#1
 - **Mejor Precisión:** 13,12%
 - **Peor Precisión:** 9,37%
 - Gráfico de comportamiento:
+
 ![pr1e2](/imgs/ex2_precisiones1.PNG "Preciones Ronda 1 - Ejemplo2")
 
 
@@ -159,6 +163,7 @@ Precisiones obtenidas en la Ronda#2
 - **Mejor Precisión:** 44,37%
 - **Peor Precisión:** 20%
 - Gráfico de comportamiento:
+
 ![pr2e2](/imgs/ex2_precisiones2.PNG "Preciones Ronda 2 - Ejemplo2")
 
 
@@ -166,6 +171,7 @@ Precisiones obtenidas en la Ronda#2 con Ronda#1
 - **Mejor Precisión:** 42,5%
 - **Peor Precisión:** 19,37%
 - Gráfico de comportamiento:
+
 ![pr21e2](/imgs/ex2_precisiones21.PNG "Preciones Ronda2 con Ronda1 - Ejemplo2")
 
 ##### Porcentaje por partido para Ronda #1, en ejecución#2
